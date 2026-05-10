@@ -41,6 +41,45 @@
       color: #eee;
       z-index: 10;
     }
+    #status-bars {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(0,0,0,0.7);
+      border: 2px solid #5a2020;
+      border-radius: 10px;
+      padding: 10px 14px;
+      min-width: 160px;
+      backdrop-filter: blur(4px);
+      display: none;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0;
+      font-size: 12px;
+    }
+    .bar-label {
+      width: 28px;
+      font-weight: bold;
+    }
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: #1a0000;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #330000;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.25s;
+    }
+    .hp-fill { background: linear-gradient(90deg, #c22, #f66); box-shadow: 0 0 6px red; }
+    .mp-fill { background: linear-gradient(90deg, #36c, #69f); box-shadow: 0 0 6px blue; }
+    .exp-fill { background: linear-gradient(90deg, #393, #6c6); box-shadow: 0 0 4px green; }
+
     .dialog-box {
       position: absolute;
       bottom: 20px;
@@ -78,44 +117,6 @@
       color: #887766;
       margin-top: 8px;
     }
-    #status-bars {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: rgba(0,0,0,0.7);
-      border: 2px solid #5a2020;
-      border-radius: 10px;
-      padding: 10px 14px;
-      min-width: 160px;
-      backdrop-filter: blur(4px);
-    }
-    .bar-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 4px 0;
-      font-size: 12px;
-    }
-    .bar-label {
-      width: 28px;
-      font-weight: bold;
-    }
-    .bar-track {
-      flex: 1;
-      height: 8px;
-      background: #1a0000;
-      border-radius: 4px;
-      overflow: hidden;
-      border: 1px solid #330000;
-    }
-    .bar-fill {
-      height: 100%;
-      transition: width 0.25s;
-    }
-    .hp-fill { background: linear-gradient(90deg, #c22, #f66); box-shadow: 0 0 6px red; }
-    .mp-fill { background: linear-gradient(90deg, #36c, #69f); box-shadow: 0 0 6px blue; }
-    .exp-fill { background: linear-gradient(90deg, #393, #6c6); box-shadow: 0 0 4px green; }
-
     #minimap-corner {
       position: absolute;
       bottom: 20px;
@@ -128,6 +129,7 @@
       background: rgba(0,0,0,0.5);
       box-shadow: 0 0 15px black;
       pointer-events: none;
+      display: none;
     }
     #mobile-controls {
       position: fixed;
@@ -180,9 +182,9 @@
   </div>
 
   <script>
-    // ═══════════════════════════════════════════
-    // ASWANG CHRONICLES - FULL RPG ENGINE
-    // ═══════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  ASWANG CHRONICLES - FULL RPG WITH SPRITE ANIMATION ENGINE
+    // ═══════════════════════════════════════════════════════════
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -192,7 +194,6 @@
     let W, H;
     const TILE_SIZE = 32;
     const MAP_W = 80, MAP_H = 80;
-    const GAME_SCALE = 1;
 
     function resize() {
       W = canvas.width = Math.min(window.innerWidth, window.innerHeight * 1.6);
@@ -201,143 +202,121 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // ──────────────────────────────────
-    // INPUT
-    // ──────────────────────────────────
-    const keys = {};
-    window.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true;
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        if (dialogBoxActive) advanceDialogue();
-        else if (!battleActive && !cutsceneActive) tryInteract();
-      }
-      if (battleActive) {
-        if (e.key === '1') playerAttack();
-        if (e.key === '2') playerMagic();
-        if (e.key === '3') playerHeal();
-      }
-    });
-    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-    function bindMobile(id, key) {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; });
-      btn.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; });
-      btn.addEventListener('touchcancel', e => { keys[key] = false; });
+    // ═══════════════ AUDIO ENGINE ═══════════════
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+    function playTone(freq, type, duration, vol=0.1, glide=0) {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      if (glide) osc.frequency.linearRampToValueAtTime(freq+glide, t+duration);
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t+duration);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t); osc.stop(t+duration);
     }
-    bindMobile('btnUp','w'); bindMobile('btnDown','s');
-    bindMobile('btnLeft','a'); bindMobile('btnRight','d');
+    function sfxAttack() { playTone(200, 'square', 0.15, 0.15); playTone(120, 'sawtooth', 0.2, 0.1); }
+    function sfxMagic() { playTone(400, 'triangle', 0.2, 0.2, 200); playTone(600, 'sine', 0.3, 0.1); }
+    function sfxHeal() { playTone(500, 'sine', 0.25, 0.15); playTone(700, 'sine', 0.3, 0.15); }
+    function sfxHit() { playTone(80, 'square', 0.2, 0.2); }
+    function sfxWin() { playTone(800, 'square', 0.15); setTimeout(()=>playTone(1000,'square',0.2),100); }
+    function sfxError() { playTone(100, 'sawtooth', 0.3, 0.15); }
 
-    // ──────────────────────────────────
-    // SPRITE GENERATION (all pixel art)
-    // ──────────────────────────────────
-    function createSpriteSheet(width, height, drawFrames) {
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = width;
-      offCanvas.height = height;
-      const offCtx = offCanvas.getContext('2d');
-      offCtx.imageSmoothingEnabled = false;
-      drawFrames(offCtx);
-      return offCanvas;
+    // ═══════════════ SPRITE GENERATION ═══════════════
+    function createSpriteSheet(width, height, drawFn) {
+      const c = document.createElement('canvas');
+      c.width = width; c.height = height;
+      const cx = c.getContext('2d');
+      cx.imageSmoothingEnabled = false;
+      drawFn(cx);
+      return c;
     }
 
-    // Player spritesheet: 4 dirs x 3 frames = 12 frames, each 24x32
-    const PLAYER_FRAME_W = 24, PLAYER_FRAME_H = 32;
-    const playerSheet = (() => {
-      const w = PLAYER_FRAME_W * 3 * 4; // 4 dirs, 3 frames each
-      const h = PLAYER_FRAME_H;
-      return createSpriteSheet(w, h, ctx => {
-        const dirs = ['down','left','right','up'];
-        dirs.forEach((dir, dIndex) => {
-          for (let f=0; f<3; f++) {
-            const fx = (dIndex*3 + f) * PLAYER_FRAME_W;
-            const fy = 0;
-            drawPlayerFrame(ctx, fx, fy, dir, f);
-          }
-        });
+    // Player: 4 dirs x 4 frames = 16 frames, each 24x32
+    const PLAYER_FW = 24, PLAYER_FH = 32;
+    const playerSheet = createSpriteSheet(PLAYER_FW * 4 * 4, PLAYER_FH, ctx => {
+      const dirs = ['down','left','right','up'];
+      dirs.forEach((dir, dIdx) => {
+        for (let f=0; f<4; f++) {
+          const fx = (dIdx*4+f)*PLAYER_FW;
+          drawPlayerFrame(ctx, fx, 0, dir, f);
+        }
       });
-    })();
+    });
 
     function drawPlayerFrame(ctx, x, y, dir, frame) {
-      ctx.save();
-      ctx.translate(x+12, y+2);
-      const bob = (frame===1) ? -1 : (frame===2) ? 1 : 0;
+      ctx.save(); ctx.translate(x+PLAYER_FW/2, y+4);
+      const bob = (frame%2===0)?0:(frame===1?-1:1);
       // hat
-      ctx.fillStyle='#5a3a1a'; ctx.fillRect(-9,-20+bob,18,5);
-      ctx.fillStyle='#7a523a'; ctx.fillRect(-10,-22+bob,20,4);
+      ctx.fillStyle='#5a3a1a'; ctx.fillRect(-9,-18+bob,18,4);
+      ctx.fillStyle='#7a523a'; ctx.fillRect(-10,-20+bob,20,3);
       // face
-      ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-15+bob,12,10);
-      ctx.fillStyle='#fff'; ctx.fillRect(-4,-13+bob,3,3); ctx.fillRect(2,-13+bob,3,3);
-      ctx.fillStyle='#000'; ctx.fillRect(-3,-12+bob,1,1); ctx.fillRect(3,-12+bob,1,1);
+      ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-14+bob,12,10);
+      ctx.fillStyle='#fff'; ctx.fillRect(-4,-12+bob,3,3); ctx.fillRect(2,-12+bob,3,3);
+      ctx.fillStyle='#000'; ctx.fillRect(-3,-11+bob,1,1); ctx.fillRect(3,-11+bob,1,1);
       // body
-      ctx.fillStyle='#2a5a2a'; ctx.fillRect(-6,-4+bob,12,16);
-      ctx.fillStyle='#4a7a4a'; ctx.fillRect(-5,-3+bob,10,14);
+      ctx.fillStyle='#2a5a2a'; ctx.fillRect(-6,-4+bob,12,15);
+      ctx.fillStyle='#4a7a4a'; ctx.fillRect(-5,-3+bob,10,13);
       // legs
-      const legShift = (frame%2===0) ? 2 : -2;
-      ctx.fillStyle='#3a2a1a'; ctx.fillRect(-5,12+bob,5,10); ctx.fillRect(1,12+bob-legShift,5,10);
+      const legShift = frame%2===0?2:-2;
+      ctx.fillStyle='#3a2a1a'; ctx.fillRect(-5,11+bob,5,9); ctx.fillRect(1,11+bob+legShift,5,9);
       // arms
-      ctx.fillStyle='#d4a574'; ctx.fillRect(-9,0+bob,4,10); ctx.fillRect(6,0+bob-legShift*0.5,4,10);
+      ctx.fillStyle='#d4a574'; ctx.fillRect(-9,0+bob,4,9); ctx.fillRect(6,0+bob+legShift*0.5,4,9);
       ctx.restore();
     }
 
-    // NPC sprites
+    // NPC: elder & merchant
     function drawNpcFrame(ctx, x, y, type, frame) {
       ctx.save(); ctx.translate(x+10, y+2);
       if (type==='elder') {
-        ctx.fillStyle='#ccc'; ctx.fillRect(-8,-20,16,6); // white hair
-        ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-14,12,10);
-        ctx.fillStyle='#6a4a2a'; ctx.fillRect(-5,-4,10,12);
-        ctx.fillStyle='#333'; ctx.fillRect(-2,-11,2,2); ctx.fillRect(4,-11,2,2); // eyes
-      } else if (type==='merchant') {
-        ctx.fillStyle='#c49a6a'; ctx.fillRect(-6,-14,12,10);
+        ctx.fillStyle='#ccc'; ctx.fillRect(-8,-18,16,5);
+        ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-13,12,10);
+        ctx.fillStyle='#6a4a2a'; ctx.fillRect(-5,-3,10,12);
+        ctx.fillStyle='#222'; ctx.fillRect(-2,-10,2,2); ctx.fillRect(4,-10,2,2);
+      } else {
+        ctx.fillStyle='#c49a6a'; ctx.fillRect(-6,-13,12,10);
         ctx.fillStyle='#a44'; ctx.fillRect(-6,-3,12,14);
-        ctx.fillStyle='#aa0'; ctx.fillRect(-2,-12,2,2); ctx.fillRect(3,-12,2,2);
+        ctx.fillStyle='#aa0'; ctx.fillRect(-2,-11,2,2); ctx.fillRect(3,-11,2,2);
       }
       ctx.restore();
     }
+    const elderSheet = createSpriteSheet(20*4, 28, ctx=>{for(let f=0;f<4;f++) drawNpcFrame(ctx,f*20,0,'elder',f);});
+    const merchantSheet = createSpriteSheet(20*4, 28, ctx=>{for(let f=0;f<4;f++) drawNpcFrame(ctx,f*20,0,'merchant',f);});
 
-    function createNpcSheet(type) {
-      return createSpriteSheet(20*3, 28, ctx => {
-        for (let f=0; f<3; f++) drawNpcFrame(ctx, f*20, 0, type, f);
-      });
+    // Portraits
+    function createPortrait(drawFn) {
+      return createSpriteSheet(48,48,ctx=>{ctx.save();ctx.translate(24,24);drawFn(ctx);ctx.restore();});
     }
-    const elderSheet = createNpcSheet('elder');
-    const merchantSheet = createNpcSheet('merchant');
-
-    // Dialogue portraits (48x48)
-    function createPortrait(label, drawFn) {
-      return createSpriteSheet(48, 48, ctx => { ctx.save(); ctx.translate(24,24); drawFn(ctx); ctx.restore(); });
-    }
-    const playerPortrait = createPortrait('elias', ctx => {
-      ctx.fillStyle='#d4a574'; ctx.fillRect(-10,-12,20,18);
-      ctx.fillStyle='#2a5a2a'; ctx.fillRect(-8,6,16,8);
-      ctx.fillStyle='#5a3a1a'; ctx.fillRect(-10,-16,20,6);
-      ctx.fillStyle='#fff'; ctx.fillRect(-5,-8,4,4); ctx.fillRect(2,-8,4,4);
+    const playerPortrait = createPortrait(ctx=>{
+      ctx.fillStyle='#d4a574';ctx.fillRect(-10,-12,20,18);ctx.fillStyle='#2a5a2a';ctx.fillRect(-8,6,16,8);
+      ctx.fillStyle='#5a3a1a';ctx.fillRect(-10,-16,20,6);ctx.fillStyle='#fff';ctx.fillRect(-5,-8,4,4);ctx.fillRect(2,-8,4,4);
     });
-    const elderPortrait = createPortrait('elder', ctx => {
-      ctx.fillStyle='#ddd'; ctx.fillRect(-12,-14,24,8);
-      ctx.fillStyle='#d4a574'; ctx.fillRect(-8,-6,16,16);
-      ctx.fillStyle='#444'; ctx.fillRect(-3,-3,3,3); ctx.fillRect(4,-3,3,3);
+    const elderPortrait = createPortrait(ctx=>{
+      ctx.fillStyle='#ddd';ctx.fillRect(-12,-14,24,8);ctx.fillStyle='#d4a574';ctx.fillRect(-8,-6,16,16);
+      ctx.fillStyle='#444';ctx.fillRect(-3,-3,3,3);ctx.fillRect(4,-3,3,3);
     });
 
-    // Enemy sprites (battle, larger)
+    // Enemy sprites (animated in battle) - larger 64x64
     function createEnemySheet(type) {
       return createSpriteSheet(64, 64, ctx => {
         ctx.save(); ctx.translate(32,32);
         if (type==='aswang') {
-          ctx.fillStyle='#5a1a1a'; ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(-8,-4,5,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(8,-4,5,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-8,-4,2,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(8,-4,2,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#fff'; ctx.fillRect(-10,10,20,6); // teeth
+          ctx.fillStyle='#3a0a0a'; ctx.beginPath(); ctx.arc(0,2,24,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#5a1a1a'; ctx.beginPath(); ctx.arc(-6,-4,18,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(-10,-6,5,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(6,-6,5,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-10,-6,2,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(6,-6,2,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#fff'; ctx.fillRect(-12,12,24,5); ctx.fillStyle='#aaa'; ctx.fillRect(-10,13,20,3);
         } else if (type==='tikbalang') {
-          ctx.fillStyle='#3a2a0a'; ctx.fillRect(-16,-20,32,40);
-          ctx.fillStyle='#6a4a1a'; ctx.fillRect(-12,-16,24,32);
-          ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(-6,-10,4,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(6,-10,4,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#3a2a0a'; ctx.fillRect(-18,-24,36,48);
+          ctx.fillStyle='#6a4a1a'; ctx.fillRect(-14,-20,28,40);
+          ctx.fillStyle='#f40'; ctx.beginPath(); ctx.arc(-8,-12,5,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#f40'; ctx.beginPath(); ctx.arc(8,-12,5,0,Math.PI*2); ctx.fill();
         }
         ctx.restore();
       });
@@ -345,256 +324,192 @@
     const aswangSheet = createEnemySheet('aswang');
     const tikbalangSheet = createEnemySheet('tikbalang');
 
-    // ──────────────────────────────────
-    // TILE MAP
-    // ──────────────────────────────────
-    const TILE_GRASS = 0, TILE_PATH = 1, TILE_WALL = 2, TILE_WATER = 3, TILE_HOUSE = 4;
+    // ═══════════════ TILE MAP ═══════════════
+    const TILE_GRASS=0, TILE_PATH=1, TILE_WALL=2, TILE_WATER=3, TILE_HOUSE=4;
     const tileColors = {
-      [TILE_GRASS]: '#1a3a1a', [TILE_PATH]: '#5a4a2a', [TILE_WALL]: '#444',
-      [TILE_WATER]: '#113366', [TILE_HOUSE]: '#6a4a2a',
+      [TILE_GRASS]:'#1a3a1a', [TILE_PATH]:'#5a4a2a', [TILE_WALL]:'#333',
+      [TILE_WATER]:'#113366', [TILE_HOUSE]:'#6a4a2a',
     };
-
     const map = [];
-    for (let y=0; y<MAP_H; y++) {
-      map[y] = [];
-      for (let x=0; x<MAP_W; x++) {
-        if (x<2||x>=MAP_W-2||y<2||y>=MAP_H-2) map[y][x] = TILE_WALL;
-        else if ((x>10&&x<16&&y>8&&y<14) || (x>30&&x<36&&y>22&&y<28)) map[y][x] = TILE_HOUSE;
-        else if ((x>4&&x<8&&y>20&&y<24)) map[y][x] = TILE_WATER;
-        else if ((x+y)%5===0) map[y][x] = TILE_PATH;
-        else map[y][x] = TILE_GRASS;
+    for (let y=0;y<MAP_H;y++) {
+      map[y]=[];
+      for (let x=0;x<MAP_W;x++) {
+        if (x<2||x>=MAP_W-2||y<2||y>=MAP_H-2) map[y][x]=TILE_WALL;
+        else if ((x>10&&x<16&&y>8&&y<14)||(x>30&&x<36&&y>22&&y<28)) map[y][x]=TILE_HOUSE;
+        else if (x>4&&x<8&&y>20&&y<24) map[y][x]=TILE_WATER;
+        else if ((x+y)%5===0||(x*y)%7===0) map[y][x]=TILE_PATH;
+        else map[y][x]=TILE_GRASS;
       }
     }
 
-    // ──────────────────────────────────
-    // NPC / OBJECT DATA
-    // ──────────────────────────────────
-    const npcs = [
-      { x:12, y:11, type:'elder', name:'Lolo Basilio', dialog: [
-        "Welcome to Barangay Balete, Elias.",
-        "Beware the aswang that roam at night.",
-        "Take this healing potion. [Received +1 Potion]"
-      ], action: ()=>{ player.potions++; }},
-      { x:33, y:25, type:'merchant', name:'Aling Rosa', dialog: [
-        "Need supplies? I sell potions and charms.",
-        "Come back when you have more gold."
-      ]}
-    ];
-
-    // ──────────────────────────────────
-    // GAME STATE
-    // ──────────────────────────────────
+    // ═══════════════ GAME STATE ═══════════════
     const player = {
       x: 5*TILE_SIZE+16, y: 5*TILE_SIZE+16,
-      hp:100, maxHp:100, mp:50, maxMp:50, level:1, exp:0, expToLevel:30,
-      gold:0, potions:2,
-      direction:'down', moving:false, animFrame:0, animTimer:0,
-      moveSpeed: 2.5,
+      hp:100,maxHp:100,mp:50,maxMp:50,level:1,exp:0,expToLevel:30,
+      gold:0,potions:2,
+      direction:'down',moving:false,animFrame:0,animTimer:0,
+      moveSpeed:2.4,
     };
 
-    let battleActive = false, currentEnemy = null, battleMessage = '';
-    let dialogBoxActive = false, currentDialog = [], dialogIndex = 0;
-    let cutsceneActive = false, cutsceneQueue = [];
-    let screenShake = 0, battleFlash = 0;
-    let battleParticles = [];
+    const npcs = [
+      {x:12,y:11,type:'elder',name:'Lolo Basilio',dialog:['Welcome to Barangay Balete, Elias.','Beware the aswang that roam at night.','Take this healing potion. (Received)'],action:()=>{player.potions++;}},
+      {x:33,y:25,type:'merchant',name:'Aling Rosa',dialog:['Need supplies? I sell potions and charms.','Come back when you have more gold.']}
+    ];
 
-    // ──────────────────────────────────
-    // DIALOGUE SYSTEM
-    // ──────────────────────────────────
+    let battleActive=false, currentEnemy=null, battleMessage='';
+    let dialogActive=false, currentDialog=[], dialogIdx=0;
+    let cutsceneActive=false, cutsceneQueue=[];
+    let screenShake=0, battleFlash=0;
+    let battleParticles=[];
+    let gameState='title'; // 'title','playing','cutscene'
+
+    // ═══════════════ DIALOGUE ═══════════════
     function startDialogue(npc) {
-      dialogBoxActive = true;
-      currentDialog = npc.dialog.slice();
-      dialogIndex = 0;
-      document.getElementById('dialogBox').style.display = 'block';
+      dialogActive=true; currentDialog=npc.dialog.slice(); dialogIdx=0;
+      document.getElementById('dialogBox').style.display='block';
       updateDialogueBox(npc);
     }
     function advanceDialogue() {
-      dialogIndex++;
-      if (dialogIndex >= currentDialog.length) {
-        endDialogue();
-      } else {
-        updateDialogueBox(null);
-      }
+      dialogIdx++;
+      if (dialogIdx>=currentDialog.length) { endDialogue(); }
+      else updateDialogueBox(null);
     }
     function endDialogue() {
-      dialogBoxActive = false;
-      document.getElementById('dialogBox').style.display = 'none';
-      // check if npc had action on last line
-      const npc = npcs.find(n => n.dialog === currentDialog);
-      if (npc && npc.action && dialogIndex === currentDialog.length-1) npc.action();
-      currentDialog = [];
+      dialogActive=false; document.getElementById('dialogBox').style.display='none';
+      const npc = npcs.find(n=>n.dialog===currentDialog);
+      if (npc&&npc.action&&dialogIdx===currentDialog.length-1) npc.action();
+      currentDialog=[];
     }
     function updateDialogueBox(npc) {
-      const textEl = document.getElementById('dialogText');
-      const portraitCanvas = document.getElementById('dialogPortrait');
-      const pCtx = portraitCanvas.getContext('2d');
-      pCtx.clearRect(0,0,70,70);
-      if (npc && npc.type==='elder') pCtx.drawImage(elderPortrait,0,0,48,48,11,11,48,48);
-      else if (npc && npc.type==='merchant') {
-        pCtx.fillStyle='#c49a6a'; pCtx.fillRect(11,11,48,48); // placeholder
-      } else pCtx.drawImage(playerPortrait,0,0,48,48,11,11,48,48);
-      textEl.textContent = currentDialog[dialogIndex] || '';
+      document.getElementById('dialogText').textContent = currentDialog[dialogIdx]||'';
+      const pc = document.getElementById('dialogPortrait'), pctx=pc.getContext('2d');
+      pctx.clearRect(0,0,70,70);
+      if (npc&&npc.type==='elder') pctx.drawImage(elderPortrait,0,0,48,48,11,11,48,48);
+      else pctx.drawImage(playerPortrait,0,0,48,48,11,11,48,48);
     }
 
     function tryInteract() {
-      const px = player.x, py = player.y;
       for (const npc of npcs) {
-        const dx = px - (npc.x*TILE_SIZE+16), dy = py - (npc.y*TILE_SIZE+16);
-        if (Math.sqrt(dx*dx+dy*dy) < 40) {
-          startDialogue(npc);
-          return;
-        }
+        const dx=player.x-(npc.x*TILE_SIZE+16), dy=player.y-(npc.y*TILE_SIZE+16);
+        if (Math.sqrt(dx*dx+dy*dy)<40) { startDialogue(npc); return; }
       }
-      // check shrines etc.
+      battleMessage='Nothing to interact with.';
     }
 
-    // ──────────────────────────────────
-    // BATTLE SYSTEM
-    // ──────────────────────────────────
-    function startBattle(enemyType) {
-      battleActive = true;
-      const types = { aswang:{hp:80,maxHp:80,damage:8,exp:20,name:'Forest Aswang',sheet:aswangSheet},
-                     tikbalang:{hp:120,maxHp:120,damage:14,exp:35,name:'Tikbalang',sheet:tikbalangSheet} };
-      const t = types[enemyType] || types.aswang;
-      currentEnemy = { ...t, hp:t.maxHp, stunned:false };
-      battleMessage = `${currentEnemy.name} appears!`;
-      battleFlash = 10;
-      screenShake = 6;
+    // ═══════════════ BATTLE ═══════════════
+    function startBattle(type) {
+      initAudio();
+      battleActive=true;
+      const templates={aswang:{hp:80,maxHp:80,damage:8,exp:20,name:'Forest Aswang',sheet:aswangSheet},
+                      tikbalang:{hp:120,maxHp:120,damage:14,exp:35,name:'Tikbalang',sheet:tikbalangSheet}};
+      const t = templates[type]||templates.aswang;
+      currentEnemy={...t,hp:t.maxHp,stunned:false};
+      battleMessage=`${currentEnemy.name} appears!`;
+      battleFlash=10; screenShake=6;
       updateUI();
     }
 
     function playerAttack() {
-      if (!battleActive || !currentEnemy) return;
-      const dmg = Math.floor(Math.random()*12)+8;
-      currentEnemy.hp -= dmg;
-      battleFlash = 15; screenShake = 8;
-      spawnBattleParticles(200, 100, '#f44', 15);
-      battleMessage = `Elias attacks for ${dmg} damage!`;
-      if (currentEnemy.hp <= 0) { victory(); return; }
-      setTimeout(enemyTurn, 900);
-      updateUI();
+      if (!battleActive||!currentEnemy) return;
+      sfxAttack();
+      const dmg=Math.floor(Math.random()*12)+8;
+      currentEnemy.hp-=dmg; battleFlash=15; screenShake=8;
+      spawnParticles(W/2+100,250,'#f44',15);
+      battleMessage=`Elias attacks for ${dmg} damage!`;
+      if (currentEnemy.hp<=0){victory();return;}
+      setTimeout(enemyTurn,900);
     }
     function playerMagic() {
-      if (player.mp < 8) { battleMessage='Not enough MP!'; return; }
-      player.mp -= 8;
-      const dmg = Math.floor(Math.random()*25)+15;
-      currentEnemy.hp -= dmg;
-      battleFlash = 25; screenShake = 10;
-      spawnBattleParticles(200, 100, '#a6f', 25);
-      battleMessage = `Shadow Flame deals ${dmg} damage!`;
-      if (currentEnemy.hp <= 0) { victory(); return; }
-      setTimeout(enemyTurn, 900);
-      updateUI();
+      if (player.mp<8){battleMessage='Not enough MP!';sfxError();return;}
+      player.mp-=8; sfxMagic();
+      const dmg=Math.floor(Math.random()*25)+15;
+      currentEnemy.hp-=dmg; battleFlash=25; screenShake=10;
+      spawnParticles(W/2+100,250,'#a6f',20);
+      battleMessage=`Shadow Flame deals ${dmg} damage!`;
+      if (currentEnemy.hp<=0){victory();return;}
+      setTimeout(enemyTurn,900);
     }
     function playerHeal() {
-      if (player.mp < 6) { battleMessage='Not enough MP!'; return; }
-      player.mp -= 6;
-      const heal = Math.min(20+Math.floor(Math.random()*15), player.maxHp-player.hp);
-      player.hp += heal;
-      spawnBattleParticles(400, 300, '#6f6', 10);
-      battleMessage = `Light Prayer restores ${heal} HP!`;
-      setTimeout(enemyTurn, 900);
-      updateUI();
+      if (player.mp<6){battleMessage='Not enough MP!';sfxError();return;}
+      player.mp-=6; sfxHeal();
+      const heal=Math.min(20+Math.floor(Math.random()*15),player.maxHp-player.hp);
+      player.hp+=heal;
+      spawnParticles(W/2-50,300,'#6f6',12);
+      battleMessage=`Light Prayer restores ${heal} HP!`;
+      setTimeout(enemyTurn,900);
     }
     function enemyTurn() {
-      if (!battleActive || !currentEnemy) return;
-      if (currentEnemy.stunned) { currentEnemy.stunned=false; battleMessage='Enemy is stunned!'; updateUI(); return; }
-      const dmg = Math.floor(Math.random()*currentEnemy.damage)+4;
-      player.hp -= dmg;
-      if (player.hp < 0) player.hp = 0;
-      battleFlash = 10; screenShake = 6;
-      battleMessage = `${currentEnemy.name} hits for ${dmg} damage!`;
-      if (player.hp <= 0) { gameOver(); return; }
+      if (!battleActive||!currentEnemy) return;
+      if (currentEnemy.stunned){currentEnemy.stunned=false;battleMessage='Enemy is stunned!';return;}
+      const dmg=Math.floor(Math.random()*currentEnemy.damage)+4;
+      player.hp-=dmg; if(player.hp<0)player.hp=0;
+      sfxHit(); battleFlash=10; screenShake=6;
+      battleMessage=`${currentEnemy.name} hits for ${dmg} damage!`;
+      if (player.hp<=0){gameOver();return;}
       updateUI();
     }
     function victory() {
-      player.exp += currentEnemy.exp;
-      player.gold += 15;
-      battleMessage = `${currentEnemy.name} defeated! +${currentEnemy.exp} EXP`;
+      player.exp+=currentEnemy.exp; player.gold+=15;
+      sfxWin(); battleMessage=`${currentEnemy.name} defeated! +${currentEnemy.exp} EXP`;
       checkLevelUp();
-      setTimeout(() => { battleActive = false; currentEnemy=null; updateUI(); }, 1500);
+      setTimeout(()=>{battleActive=false;currentEnemy=null;updateUI();},1500);
     }
     function gameOver() {
-      battleMessage = 'Elias falls... Respawning.';
-      setTimeout(() => {
-        player.hp = Math.floor(player.maxHp/2);
-        player.mp = Math.floor(player.maxMp/2);
-        battleActive = false;
-        currentEnemy = null;
-        player.x = 5*TILE_SIZE+16; player.y = 5*TILE_SIZE+16;
+      battleMessage='Elias falls... Respawning.';
+      setTimeout(()=>{
+        player.hp=Math.floor(player.maxHp/2); player.mp=Math.floor(player.maxMp/2);
+        battleActive=false; currentEnemy=null;
+        player.x=5*TILE_SIZE+16; player.y=5*TILE_SIZE+16;
         updateUI();
-      }, 2000);
+      },2000);
     }
-    function spawnBattleParticles(x,y,color,count) {
-      for (let i=0;i<count;i++) battleParticles.push({x,y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6-2,life:20,color,size:2+Math.random()*4});
+    function spawnParticles(x,y,color,count) {
+      for(let i=0;i<count;i++) battleParticles.push({x,y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6-2,life:20,color,size:2+Math.random()*4});
     }
     function checkLevelUp() {
-      while (player.exp >= player.expToLevel) {
-        player.exp -= player.expToLevel;
-        player.level++;
-        player.expToLevel = Math.floor(player.expToLevel*1.5);
-        player.maxHp += 12; player.hp = player.maxHp;
-        player.maxMp += 6; player.mp = player.maxMp;
+      while(player.exp>=player.expToLevel){
+        player.exp-=player.expToLevel; player.level++; player.expToLevel=Math.floor(player.expToLevel*1.5);
+        player.maxHp+=12; player.hp=player.maxHp; player.maxMp+=6; player.mp=player.maxMp;
       }
     }
 
-    // ──────────────────────────────────
-    // CUTSCENE ENGINE
-    // ──────────────────────────────────
+    // ═══════════════ CUTSCENE ═══════════════
     function playCutscene(commands) {
-      cutsceneActive = true;
-      cutsceneQueue = commands.slice();
-      processCutscene();
+      cutsceneActive=true; cutsceneQueue=commands.slice(); processCutscene();
     }
     function processCutscene() {
-      if (cutsceneQueue.length === 0) { cutsceneActive = false; return; }
-      const cmd = cutsceneQueue.shift();
-      if (cmd.type === 'message') {
-        battleMessage = cmd.text;
-        updateUI();
+      if (cutsceneQueue.length===0){cutsceneActive=false;if(gameState==='cutscene')gameState='playing';return;}
+      const cmd=cutsceneQueue.shift();
+      if (cmd.type==='message') {
+        battleMessage=cmd.text; updateUI();
         setTimeout(processCutscene, cmd.duration||2000);
-      } else if (cmd.type === 'wait') {
+      } else if (cmd.type==='wait') {
         setTimeout(processCutscene, cmd.duration);
-      } else if (cmd.type === 'camera') {
-        // camera target change
-        processCutscene();
       }
     }
 
-    // ──────────────────────────────────
-    // UPDATE & RENDER
-    // ──────────────────────────────────
+    // ═══════════════ UPDATE ═══════════════
     function update() {
-      if (dialogBoxActive || cutsceneActive) return;
+      if (dialogActive||cutsceneActive||gameState==='title') return;
       if (!battleActive) {
-        let dx=0, dy=0;
-        if (keys['w']||keys['arrowup']) { dy=-1; player.direction='up'; }
-        if (keys['s']||keys['arrowdown']) { dy=1; player.direction='down'; }
-        if (keys['a']||keys['arrowleft']) { dx=-1; player.direction='left'; }
-        if (keys['d']||keys['arrowright']) { dx=1; player.direction='right'; }
-        if (dx!==0||dy!==0) {
-          player.moving = true;
-          const nx = player.x + dx*player.moveSpeed;
-          const ny = player.y + dy*player.moveSpeed;
-          // simple tile collision
-          const tileX = Math.floor(nx/TILE_SIZE), tileY = Math.floor(ny/TILE_SIZE);
-          if (map[tileY] && map[tileY][tileX] !== TILE_WALL && map[tileY][tileX] !== TILE_WATER && map[tileY][tileX] !== TILE_HOUSE) {
-            player.x = nx; player.y = ny;
+        let dx=0,dy=0;
+        if (keys['w']||keys['arrowup']){dy=-1;player.direction='up';}
+        if (keys['s']||keys['arrowdown']){dy=1;player.direction='down';}
+        if (keys['a']||keys['arrowleft']){dx=-1;player.direction='left';}
+        if (keys['d']||keys['arrowright']){dx=1;player.direction='right';}
+        if (dx||dy){
+          player.moving=true;
+          const nx=player.x+dx*player.moveSpeed, ny=player.y+dy*player.moveSpeed;
+          const tx=Math.floor(nx/TILE_SIZE), ty=Math.floor(ny/TILE_SIZE);
+          if (map[ty]&&map[ty][tx]!==TILE_WALL&&map[ty][tx]!==TILE_WATER&&map[ty][tx]!==TILE_HOUSE){
+            player.x=nx; player.y=ny;
           }
-          player.animTimer++;
-          if (player.animTimer > 8) { player.animFrame = (player.animFrame+1)%3; player.animTimer=0; }
-        } else {
-          player.moving = false; player.animFrame = 0;
-        }
-        // random battle
-        if (Math.random() < 0.003 && !battleActive) {
-          startBattle('aswang');
-        }
+          player.animTimer++; if(player.animTimer>8){player.animFrame=(player.animFrame+1)%4;player.animTimer=0;}
+        } else { player.moving=false; player.animFrame=0; }
+        if (Math.random()<0.002) startBattle('aswang');
       }
-      // update battle particles
-      for (let i=battleParticles.length-1; i>=0; i--) {
-        const p = battleParticles[i];
-        p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
+      for (let i=battleParticles.length-1;i>=0;i--){
+        const p=battleParticles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
         if (p.life<=0) battleParticles.splice(i,1);
       }
       if (screenShake>0) screenShake--;
@@ -603,104 +518,150 @@
     }
 
     function updateUI() {
-      document.getElementById('hpFill').style.width = `${(player.hp/player.maxHp)*100}%`;
-      document.getElementById('mpFill').style.width = `${(player.mp/player.maxMp)*100}%`;
-      document.getElementById('expFill').style.width = `${(player.exp/player.expToLevel)*100}%`;
-      document.getElementById('hpText').textContent = `${player.hp}/${player.maxHp}`;
-      document.getElementById('mpText').textContent = `${player.mp}/${player.maxMp}`;
-      document.getElementById('lvlText').textContent = player.level;
-      document.getElementById('expText').textContent = `${player.exp}/${player.expToLevel}`;
+      document.getElementById('hpFill').style.width=`${(player.hp/player.maxHp)*100}%`;
+      document.getElementById('mpFill').style.width=`${(player.mp/player.maxMp)*100}%`;
+      document.getElementById('expFill').style.width=`${(player.exp/player.expToLevel)*100}%`;
+      document.getElementById('hpText').textContent=`${player.hp}/${player.maxHp}`;
+      document.getElementById('mpText').textContent=`${player.mp}/${player.maxMp}`;
+      document.getElementById('lvlText').textContent=player.level;
+      document.getElementById('expText').textContent=`${player.exp}/${player.expToLevel}`;
     }
 
+    // ═══════════════ RENDER ═══════════════
     function drawTileMap(ctx, camX, camY) {
-      const startTileX = Math.floor(camX/TILE_SIZE);
-      const startTileY = Math.floor(camY/TILE_SIZE);
-      const endTileX = startTileX + Math.ceil(W/TILE_SIZE)+1;
-      const endTileY = startTileY + Math.ceil(H/TILE_SIZE)+1;
-      for (let ty=startTileY; ty<=endTileY; ty++) {
-        for (let tx=startTileX; tx<=endTileX; tx++) {
-          if (ty<0||ty>=MAP_H||tx<0||tx>=MAP_W) continue;
-          const tile = map[ty][tx];
-          const sx = tx*TILE_SIZE - camX;
-          const sy = ty*TILE_SIZE - camY;
-          ctx.fillStyle = tileColors[tile] || '#000';
-          ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
-          if (tile === TILE_GRASS) {
-            ctx.fillStyle = '#2a5a2a'; ctx.fillRect(sx+2, sy+2, 3,3);
-          } else if (tile === TILE_PATH) {
-            ctx.fillStyle = '#7a6a4a'; ctx.fillRect(sx+6, sy+6, 4,4);
-          }
-        }
+      const stx=Math.floor(camX/TILE_SIZE), sty=Math.floor(camY/TILE_SIZE);
+      const etx=stx+Math.ceil(W/TILE_SIZE)+1, ety=sty+Math.ceil(H/TILE_SIZE)+1;
+      for (let ty=sty;ty<=ety;ty++) for (let tx=stx;tx<=etx;tx++) {
+        if (ty<0||ty>=MAP_H||tx<0||tx>=MAP_W) continue;
+        const tile=map[ty][tx], sx=tx*TILE_SIZE-camX, sy=ty*TILE_SIZE-camY;
+        ctx.fillStyle=tileColors[tile]; ctx.fillRect(sx,sy,TILE_SIZE,TILE_SIZE);
+        if (tile===TILE_GRASS){ctx.fillStyle='#2a5a2a';ctx.fillRect(sx+2,sy+2,3,3);}
+        else if (tile===TILE_PATH){ctx.fillStyle='#7a6a4a';ctx.fillRect(sx+6,sy+6,4,4);}
       }
     }
 
-    function drawSprite(ctx, sheet, frameX, frameY, frameW, frameH, dx, dy) {
-      ctx.drawImage(sheet, frameX*frameW, frameY*frameH, frameW, frameH, dx-frameW/2, dy-frameH, frameW, frameH);
+    function drawSprite(ctx, sheet, frameIdx, frameW, frameH, dx, dy, flip=false) {
+      const col = frameIdx % (sheet.width/frameW);
+      const row = Math.floor(frameIdx / (sheet.width/frameW));
+      ctx.save();
+      if (flip) { ctx.translate(dx, dy); ctx.scale(-1,1); ctx.drawImage(sheet, col*frameW, row*frameH, frameW, frameH, -frameW/2, -frameH, frameW, frameH); }
+      else ctx.drawImage(sheet, col*frameW, row*frameH, frameW, frameH, dx-frameW/2, dy-frameH, frameW, frameH);
+      ctx.restore();
     }
 
     function drawGame() {
       ctx.clearRect(0,0,W,H);
-      const camX = player.x - W/2;
-      const camY = player.y - H/2;
-      drawTileMap(ctx, camX, camY);
-
-      // Draw NPCs
-      for (const npc of npcs) {
-        const nx = npc.x*TILE_SIZE+16 - camX;
-        const ny = npc.y*TILE_SIZE+16 - camY;
-        const sheet = npc.type==='elder'? elderSheet : merchantSheet;
-        drawSprite(ctx, sheet, 0,0,20,28, nx, ny);
+      if (gameState==='title') {
+        ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#a00'; ctx.font='42px Georgia'; ctx.textAlign='center';
+        ctx.fillText('ASWANG',W/2,H/2-40); ctx.fillText('CHRONICLES',W/2,H/2+10);
+        ctx.fillStyle='#ffcc00'; ctx.font='16px Georgia';
+        ctx.fillText('Barangay Balete',W/2,H/2+50);
+        ctx.fillStyle='#fff'; ctx.font='14px Georgia';
+        ctx.fillText('Press Space or Tap to Start',W/2,H/2+90);
+        return;
       }
 
-      // Draw player
-      const dirIndex = {down:0, left:1, right:2, up:3}[player.direction] || 0;
-      const frameCol = player.moving ? player.animFrame : 0;
-      const px = W/2, py = H/2;
-      drawSprite(ctx, playerSheet, dirIndex*3+frameCol, 0, PLAYER_FRAME_W, PLAYER_FRAME_H, px, py);
+      const camX = player.x - W/2, camY = player.y - H/2;
+      drawTileMap(ctx, camX, camY);
+
+      // NPCs
+      for (const npc of npcs) {
+        const nx = npc.x*TILE_SIZE+16 - camX, ny = npc.y*TILE_SIZE+16 - camY;
+        const sheet = npc.type==='elder'?elderSheet:merchantSheet;
+        drawSprite(ctx, sheet, 0, 20, 28, nx, ny);
+      }
+
+      // Player
+      const dirIdx = {down:0,left:1,right:2,up:3}[player.direction]||0;
+      const frame = player.moving ? player.animFrame : 0;
+      drawSprite(ctx, playerSheet, dirIdx*4+frame, PLAYER_FW, PLAYER_FH, W/2, H/2);
 
       // Battle overlay
       if (battleActive && currentEnemy) {
-        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0,0,W,H);
-        ctx.fillStyle = '#fff'; ctx.font='20px Georgia'; ctx.textAlign='center';
+        ctx.fillStyle='rgba(0,0,0,0.8)'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#fff'; ctx.font='24px Georgia'; ctx.textAlign='center';
         ctx.fillText(currentEnemy.name, W/2, 70);
-        drawSprite(ctx, currentEnemy.sheet, 0,0,64,64, W-120, 200);
+        // enemy sprite centered
+        drawSprite(ctx, currentEnemy.sheet, 0, 64, 64, W/2+120, 250);
         // HP bars
-        ctx.fillStyle='red'; ctx.fillRect(W/2-150,90,300,15);
-        ctx.fillStyle='lime'; ctx.fillRect(W/2-150,90,300*(currentEnemy.hp/currentEnemy.maxHp),15);
-        ctx.fillStyle='red'; ctx.fillRect(50, H-100, 200,15);
-        ctx.fillStyle='lime'; ctx.fillRect(50, H-100, 200*(player.hp/player.maxHp),15);
+        ctx.fillStyle='#300'; ctx.fillRect(W/2-150,90,300,16);
+        ctx.fillStyle='#c00'; ctx.fillRect(W/2-150,90,300*(currentEnemy.hp/currentEnemy.maxHp),16);
+        ctx.fillStyle='#300'; ctx.fillRect(50, H-100, 200,14);
+        ctx.fillStyle='#0c0'; ctx.fillRect(50, H-100, 200*(player.hp/player.maxHp),14);
+        ctx.fillStyle='#fff'; ctx.font='14px monospace';
+        ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 50, H-110);
         ctx.fillText(battleMessage, W/2, H-40);
-        // battle particles
-        for (const p of battleParticles) {
-          ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
-        }
+        // particles
+        for (const p of battleParticles) { ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); }
       }
 
-      // Pixel lighting (vignette)
-      const gradient = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, 450);
-      gradient.addColorStop(0,'rgba(0,0,0,0)'); gradient.addColorStop(0.5,'rgba(0,0,0,0.2)'); gradient.addColorStop(1,'rgba(0,0,0,0.9)');
-      ctx.fillStyle = gradient; ctx.fillRect(0,0,W,H);
+      // vignette
+      const grad = ctx.createRadialGradient(W/2,H/2,100,W/2,H/2,450);
+      grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(0.5,'rgba(0,0,0,0.15)'); grad.addColorStop(1,'rgba(0,0,0,0.85)');
+      ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
 
-      // Screen shake
       if (screenShake>0) {
-        const sx = (Math.random()-0.5)*screenShake*1.5;
-        const sy = (Math.random()-0.5)*screenShake*1.5;
-        canvas.style.transform = `translate(${sx}px,${sy}px)`;
-      } else canvas.style.transform = '';
+        const sx=(Math.random()-0.5)*screenShake*1.5, sy=(Math.random()-0.5)*screenShake*1.5;
+        canvas.style.transform=`translate(${sx}px,${sy}px)`;
+      } else canvas.style.transform='';
 
-      // Minimap
-      minimapCtx.clearRect(0,0,90,90);
-      minimapCtx.fillStyle='#111'; minimapCtx.beginPath(); minimapCtx.arc(45,45,45,0,Math.PI*2); minimapCtx.fill();
-      const mmScale = 0.8;
-      for (let y=0; y<MAP_H; y++) {
-        for (let x=0; x<MAP_W; x++) {
-          if (map[y][x]===TILE_WALL || map[y][x]===TILE_WATER) {
-            minimapCtx.fillStyle = map[y][x]===TILE_WALL ? '#666' : '#26a';
-            minimapCtx.fillRect(45+(x-MAP_W/2)*mmScale, 45+(y-MAP_H/2)*mmScale, 1,1);
-          }
+      // minimap
+      if (gameState==='playing' && !battleActive) {
+        minimapCtx.clearRect(0,0,90,90); minimapCtx.fillStyle='#111';
+        minimapCtx.beginPath(); minimapCtx.arc(45,45,45,0,Math.PI*2); minimapCtx.fill();
+        const s=0.8;
+        for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) if(map[y][x]===TILE_WALL||map[y][x]===TILE_WATER){
+          minimapCtx.fillStyle=map[y][x]===TILE_WALL?'#666':'#26a';
+          minimapCtx.fillRect(45+(x-MAP_W/2)*s,45+(y-MAP_H/2)*s,1,1);
         }
+        minimapCtx.fillStyle='#f44'; minimapCtx.fillRect(45+(player.x/TILE_SIZE-MAP_W/2)*s,45+(player.y/TILE_SIZE-MAP_H/2)*s,2,2);
       }
-      minimapCtx.fillStyle='#f44'; minimapCtx.fillRect(45+(player.x/TILE_SIZE-MAP_W/2)*mmScale, 45+(player.y/TILE_SIZE-MAP_H/2)*mmScale,2,2);
+    }
+
+    // ═══════════════ INPUT ═══════════════
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (gameState==='title') { startGame(); return; }
+        if (dialogActive) { advanceDialogue(); return; }
+        if (!battleActive && !cutsceneActive) tryInteract();
+      }
+      if (battleActive) {
+        if (e.key==='1') playerAttack();
+        if (e.key==='2') playerMagic();
+        if (e.key==='3') playerHeal();
+      }
+    });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    canvas.addEventListener('click', () => {
+      if (gameState==='title') startGame();
+      else if (dialogActive) advanceDialogue();
+    });
+
+    function bindMobile(id, key) {
+      const btn=document.getElementById(id);
+      if(!btn)return;
+      btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;});
+      btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;});
+    }
+    bindMobile('btnUp','w'); bindMobile('btnDown','s'); bindMobile('btnLeft','a'); bindMobile('btnRight','d');
+
+    function startGame() {
+      gameState='cutscene';
+      document.getElementById('status-bars').style.display='block';
+      document.getElementById('minimap-corner').style.display='block';
+      playCutscene([
+        {type:'message', text:'Elias returns to Barangay Balete...', duration:2500},
+        {type:'message', text:'The elders spoke of a growing darkness.', duration:2500},
+        {type:'message', text:'Find Lolo Basilio near the old house.', duration:2500},
+        {type:'wait', duration:500}
+      ]);
+      initAudio();
+      // play a little opening jingle
+      playTone(400,'triangle',0.3); setTimeout(()=>playTone(600,'triangle',0.2),150);
     }
 
     function gameLoop() {
@@ -709,18 +670,9 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // ──────────────────────────────────
-    // START CUTSCENE
-    // ──────────────────────────────────
-    setTimeout(() => {
-      playCutscene([
-        {type:'message', text:'Elias returns to Barangay Balete...', duration:2500},
-        {type:'message', text:'The elders spoke of a growing darkness.', duration:2500},
-        {type:'message', text:'Find Lolo Basilio near the old house.', duration:2500},
-      ]);
-    }, 500);
-
     updateUI();
+    document.getElementById('status-bars').style.display='none';
+    document.getElementById('minimap-corner').style.display='none';
     gameLoop();
   </script>
 </body>
