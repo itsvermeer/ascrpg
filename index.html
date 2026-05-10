@@ -1,1473 +1,727 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Aswang Chronicles - Barangay Balete</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Aswang Chronicles · Barangay Balete</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+    }
+    #ui-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: #eee;
+      z-index: 10;
+    }
+    .dialog-box {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 88%;
+      max-width: 700px;
+      background: rgba(10, 0, 0, 0.9);
+      border: 3px solid #8b3a3a;
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      pointer-events: auto;
+      backdrop-filter: blur(4px);
+    }
+    .dialog-portrait {
+      width: 70px;
+      height: 70px;
+      border: 3px solid #a55;
+      border-radius: 12px;
+      float: left;
+      margin-right: 18px;
+      image-rendering: pixelated;
+      background: #221;
+    }
+    .dialog-text {
+      font-size: clamp(13px, 2vw, 16px);
+      line-height: 1.5;
+      color: #f0d8a0;
+    }
+    .dialog-hint {
+      text-align: right;
+      font-size: 12px;
+      color: #887766;
+      margin-top: 8px;
+    }
+    #status-bars {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(0,0,0,0.7);
+      border: 2px solid #5a2020;
+      border-radius: 10px;
+      padding: 10px 14px;
+      min-width: 160px;
+      backdrop-filter: blur(4px);
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0;
+      font-size: 12px;
+    }
+    .bar-label {
+      width: 28px;
+      font-weight: bold;
+    }
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: #1a0000;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #330000;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.25s;
+    }
+    .hp-fill { background: linear-gradient(90deg, #c22, #f66); box-shadow: 0 0 6px red; }
+    .mp-fill { background: linear-gradient(90deg, #36c, #69f); box-shadow: 0 0 6px blue; }
+    .exp-fill { background: linear-gradient(90deg, #393, #6c6); box-shadow: 0 0 4px green; }
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #0a0000;
-            font-family: 'Georgia', 'Times New Roman', serif;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-        }
-
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-
-        #ui {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        /* ── Top Title Banner ── */
-        #title-banner {
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(180deg, rgba(60, 0, 0, 0.9) 0%, rgba(20, 0, 0, 0.85) 100%);
-            border: 3px solid #8b0000;
-            border-image: linear-gradient(135deg, #8b0000, #ff2200, #8b0000) 1;
-            border-radius: 6px;
-            padding: 8px 28px;
-            text-align: center;
-            box-shadow: 0 0 25px rgba(255, 0, 0, 0.3), 0 4px 15px rgba(0, 0, 0, 0.7);
-            letter-spacing: 3px;
-        }
-
-        #title-banner h1 {
-            color: #ffcc00;
-            font-size: clamp(16px, 3vw, 26px);
-            font-weight: bold;
-            text-shadow: 0 0 8px #ff6600, 0 0 20px #990000, 0 2px 4px #000;
-            margin: 0;
-            letter-spacing: 5px;
-            font-family: 'Georgia', serif;
-        }
-
-        #title-banner .subtitle {
-            color: #cc9966;
-            font-size: clamp(9px, 1.5vw, 12px);
-            letter-spacing: 2px;
-            text-shadow: 0 0 4px #660000;
-        }
-
-        /* ── Status Panel ── */
-        #status-panel {
-            position: absolute;
-            top: 100px;
-            left: 12px;
-            background: rgba(10, 0, 0, 0.85);
-            border: 2px solid #5a1a1a;
-            border-radius: 10px;
-            padding: 10px 14px;
-            color: #e0d0b0;
-            font-size: clamp(11px, 1.6vw, 13px);
-            box-shadow: 0 0 18px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(80, 0, 0, 0.3);
-            min-width: 130px;
-            backdrop-filter: blur(2px);
-        }
-
-        #status-panel .stat-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin: 3px 0;
-        }
-
-        #status-panel .stat-icon {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            display: inline-block;
-            flex-shrink: 0;
-        }
-
-        .icon-hp {
-            background: #ff2244;
-            box-shadow: 0 0 6px #ff0000;
-        }
-        .icon-mp {
-            background: #4488ff;
-            box-shadow: 0 0 6px #0044ff;
-        }
-        .icon-lvl {
-            background: #ffaa00;
-            box-shadow: 0 0 6px #ff8800;
-        }
-        .icon-exp {
-            background: #44cc44;
-            box-shadow: 0 0 6px #00aa00;
-        }
-
-        #status-panel .bar-container {
-            width: 100%;
-            height: 6px;
-            background: #1a0000;
-            border-radius: 3px;
-            margin-top: 2px;
-            border: 1px solid #330000;
-            overflow: hidden;
-        }
-
-        #status-panel .bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.3s;
-        }
-
-        .bar-hp {
-            background: linear-gradient(90deg, #ff2244, #ff6666);
-            box-shadow: 0 0 8px #ff0000;
-        }
-        .bar-mp {
-            background: linear-gradient(90deg, #3366cc, #6699ff);
-            box-shadow: 0 0 8px #0044ff;
-        }
-        .bar-exp {
-            background: linear-gradient(90deg, #339933, #66cc66);
-            box-shadow: 0 0 6px #00aa00;
-        }
-
-        /* ── Battle Text ── */
-        #battle-text {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 92%;
-            max-width: 750px;
-            background: rgba(5, 0, 0, 0.9);
-            border: 2px solid #7a2020;
-            border-radius: 10px;
-            color: #f0d8a0;
-            padding: 12px 18px;
-            font-size: clamp(13px, 2vw, 16px);
-            text-align: center;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            letter-spacing: 1px;
-            line-height: 1.5;
-            transition: all 0.3s;
-        }
-
-        #battle-text .highlight {
-            color: #ff4444;
-            font-weight: bold;
-        }
-        #battle-text .heal-text {
-            color: #66ff66;
-            font-weight: bold;
-        }
-        #battle-text .magic-text {
-            color: #6699ff;
-            font-weight: bold;
-        }
-
-        /* ── Mobile Controls ── */
-        #controls {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        .btn {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(80, 0, 0, 0.45);
-            border: 3px solid rgba(200, 40, 40, 0.55);
-            pointer-events: auto;
-            touch-action: manipulation;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
-            transition: all 0.15s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn:active {
-            background: rgba(200, 20, 20, 0.7);
-            border-color: rgba(255, 80, 80, 0.9);
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
-            transform: scale(0.9);
-        }
-
-        .btn::after {
-            content: '';
-            font-size: 22px;
-            color: #ff8888;
-            pointer-events: none;
-            text-shadow: 0 0 6px #ff0000;
-        }
-
-        #up {
-            bottom: 140px;
-            left: 75px;
-        }
-        #up::after {
-            content: '▲';
-        }
-        #down {
-            bottom: 40px;
-            left: 75px;
-        }
-        #down::after {
-            content: '▼';
-        }
-        #left {
-            bottom: 90px;
-            left: 12px;
-        }
-        #left::after {
-            content: '◀';
-        }
-        #right {
-            bottom: 90px;
-            left: 138px;
-        }
-        #right::after {
-            content: '▶';
-        }
-
-        #action-btn {
-            bottom: 90px;
-            right: 40px;
-            width: 80px;
-            height: 80px;
-            background: rgba(180, 20, 20, 0.5);
-            border: 3px solid rgba(255, 60, 60, 0.7);
-            font-size: 11px;
-            color: #ffaaaa;
-            letter-spacing: 1px;
-            text-shadow: 0 0 8px #ff0000;
-            font-weight: bold;
-            pointer-events: auto;
-            touch-action: manipulation;
-        }
-
-        /* ── Minimap ── */
-        #minimap {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 90px;
-            height: 90px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #441111;
-            border-radius: 50%;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-            pointer-events: none;
-        }
-
-        /* ── Desktop hint ── */
-        @media (min-width: 900px) {
-            #controls {
-                display: none;
-            }
-            #keyboard-hint {
-                display: block !important;
-            }
-        }
-
-        #keyboard-hint {
-            display: none;
-            position: absolute;
-            bottom: 20px;
-            right: 130px;
-            color: #887766;
-            font-size: 11px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 4px 10px;
-            border-radius: 6px;
-            pointer-events: none;
-            letter-spacing: 1px;
-        }
-
-        /* ── Damage Float ── */
-        .damage-float {
-            position: fixed;
-            pointer-events: none;
-            font-weight: bold;
-            font-size: 20px;
-            z-index: 30;
-            animation: floatUp 1s forwards;
-            text-shadow: 0 0 8px currentColor;
-        }
-
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            60% {
-                opacity: 0.8;
-                transform: translateY(-50px) scale(1.3);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-80px) scale(0.8);
-            }
-        }
-
-        /* ── Screen Shake ── */
-        .screen-shake {
-            animation: shake 0.4s ease-out;
-        }
-
-        @keyframes shake {
-            0%,
-            100% {
-                transform: translate(0);
-            }
-            15% {
-                transform: translate(-8px, 4px);
-            }
-            30% {
-                transform: translate(7px, -5px);
-            }
-            45% {
-                transform: translate(-5px, -3px);
-            }
-            60% {
-                transform: translate(4px, 6px);
-            }
-            75% {
-                transform: translate(-3px, -2px);
-            }
-            90% {
-                transform: translate(2px, 1px);
-            }
-        }
-    </style>
+    #minimap-corner {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 3px solid #5a2020;
+      overflow: hidden;
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px black;
+      pointer-events: none;
+    }
+    #mobile-controls {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .ctrl-btn {
+      position: absolute;
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background: rgba(80,0,0,0.4);
+      border: 2px solid rgba(200,50,50,0.5);
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffaaaa;
+      font-size: 22px;
+      text-shadow: 0 0 5px red;
+      touch-action: manipulation;
+    }
+    .ctrl-btn:active { background: rgba(180,20,20,0.7); }
+    @media (min-width: 900px) { #mobile-controls { display: none; } }
+  </style>
 </head>
 <body>
-
-    <canvas id="game"></canvas>
-
-    <div id="ui">
-        <!-- Title Banner -->
-        <div id="title-banner">
-            <h1>ASWANG CHRONICLES</h1>
-            <div class="subtitle">━ Barangay Balete ━</div>
-        </div>
-
-        <!-- Status Panel -->
-        <div id="status-panel">
-            <div class="stat-row">
-                <span class="stat-icon icon-hp"></span> HP: <span id="hp-text">100/100</span>
-            </div>
-            <div class="bar-container"><div class="bar-fill bar-hp" id="hp-bar" style="width:100%"></div></div>
-
-            <div class="stat-row">
-                <span class="stat-icon icon-mp"></span> MP: <span id="mp-text">50/50</span>
-            </div>
-            <div class="bar-container"><div class="bar-fill bar-mp" id="mp-bar" style="width:100%"></div></div>
-
-            <div class="stat-row">
-                <span class="stat-icon icon-lvl"></span> LVL: <span id="lvl-text">1</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-icon icon-exp"></span> EXP: <span id="exp-text">0/30</span>
-            </div>
-            <div class="bar-container"><div class="bar-fill bar-exp" id="exp-bar" style="width:0%"></div></div>
-        </div>
-
-        <!-- Battle Text -->
-        <div id="battle-text">
-            Elias enters the misty barangay...
-        </div>
-
-        <!-- Keyboard Hint -->
-        <div id="keyboard-hint">WASD = Move | 1/2/3 = Combat</div>
-
-        <!-- Minimap -->
-        <div id="minimap">
-            <canvas id="minimap-canvas" width="90" height="90"></canvas>
-        </div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui-layer">
+    <div id="status-bars">
+      <div class="bar-row"><span class="bar-label">HP</span><div class="bar-track"><div class="bar-fill hp-fill" id="hpFill" style="width:100%"></div></div><span id="hpText">100/100</span></div>
+      <div class="bar-row"><span class="bar-label">MP</span><div class="bar-track"><div class="bar-fill mp-fill" id="mpFill" style="width:100%"></div></div><span id="mpText">50/50</span></div>
+      <div class="bar-row"><span class="bar-label">Lv</span><span id="lvlText">1</span><span style="margin-left:auto;" id="expText">0/30</span></div>
+      <div class="bar-track"><div class="bar-fill exp-fill" id="expFill" style="width:0%"></div></div>
     </div>
-
-    <!-- Mobile Controls -->
-    <div id="controls">
-        <div class="btn" id="up"></div>
-        <div class="btn" id="down"></div>
-        <div class="btn" id="left"></div>
-        <div class="btn" id="right"></div>
-        <div class="btn" id="action-btn" title="Interact / Confirm">⚔️ ACT</div>
+    <div class="dialog-box" id="dialogBox">
+      <canvas class="dialog-portrait" id="dialogPortrait" width="70" height="70"></canvas>
+      <div class="dialog-text" id="dialogText"></div>
+      <div class="dialog-hint">[Space / Tap] continue</div>
     </div>
+    <div id="minimap-corner"><canvas id="minimapCanvas" width="90" height="90"></canvas></div>
+  </div>
+  <div id="mobile-controls">
+    <div class="ctrl-btn" id="btnUp" style="bottom:140px;left:70px;">▲</div>
+    <div class="ctrl-btn" id="btnDown" style="bottom:40px;left:70px;">▼</div>
+    <div class="ctrl-btn" id="btnLeft" style="bottom:90px;left:10px;">◀</div>
+    <div class="ctrl-btn" id="btnRight" style="bottom:90px;left:130px;">▶</div>
+  </div>
 
-    <script>
-        // ──────────────────────────────────────
-        //  ASWANG CHRONICLES - ENHANCED ENGINE
-        // ──────────────────────────────────────
+  <script>
+    // ═══════════════════════════════════════════
+    // ASWANG CHRONICLES - FULL RPG ENGINE
+    // ═══════════════════════════════════════════
 
-        const canvas = document.getElementById("game");
-        const ctx = canvas.getContext("2d");
-        const minimapCanvas = document.getElementById("minimap-canvas");
-        const minimapCtx = minimapCanvas.getContext("2d");
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const minimapCanvas = document.getElementById('minimapCanvas');
+    const minimapCtx = minimapCanvas.getContext('2d');
 
-        let W, H;
+    let W, H;
+    const TILE_SIZE = 32;
+    const MAP_W = 80, MAP_H = 80;
+    const GAME_SCALE = 1;
 
-        function resize() {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-        }
-        resize();
-        window.addEventListener("resize", resize);
+    function resize() {
+      W = canvas.width = Math.min(window.innerWidth, window.innerHeight * 1.6);
+      H = canvas.height = Math.min(window.innerHeight, window.innerWidth / 1.6);
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-        // ── INPUT ────────────────────────────
-        const keys = {};
-        window.addEventListener("keydown", (e) => {
-            keys[e.key.toLowerCase()] = true;
-            if (battle.active) {
-                if (e.key === "1") playerAttack();
-                if (e.key === "2") playerMagic();
-                if (e.key === "3") playerHeal();
-                if (e.key === " ") {
-                    e.preventDefault();
-                    playerAttack();
-                }
-            }
-            if (e.key === "e" && !battle.active) tryInteract();
+    // ──────────────────────────────────
+    // INPUT
+    // ──────────────────────────────────
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (dialogBoxActive) advanceDialogue();
+        else if (!battleActive && !cutsceneActive) tryInteract();
+      }
+      if (battleActive) {
+        if (e.key === '1') playerAttack();
+        if (e.key === '2') playerMagic();
+        if (e.key === '3') playerHeal();
+      }
+    });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    function bindMobile(id, key) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; });
+      btn.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; });
+      btn.addEventListener('touchcancel', e => { keys[key] = false; });
+    }
+    bindMobile('btnUp','w'); bindMobile('btnDown','s');
+    bindMobile('btnLeft','a'); bindMobile('btnRight','d');
+
+    // ──────────────────────────────────
+    // SPRITE GENERATION (all pixel art)
+    // ──────────────────────────────────
+    function createSpriteSheet(width, height, drawFrames) {
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = width;
+      offCanvas.height = height;
+      const offCtx = offCanvas.getContext('2d');
+      offCtx.imageSmoothingEnabled = false;
+      drawFrames(offCtx);
+      return offCanvas;
+    }
+
+    // Player spritesheet: 4 dirs x 3 frames = 12 frames, each 24x32
+    const PLAYER_FRAME_W = 24, PLAYER_FRAME_H = 32;
+    const playerSheet = (() => {
+      const w = PLAYER_FRAME_W * 3 * 4; // 4 dirs, 3 frames each
+      const h = PLAYER_FRAME_H;
+      return createSpriteSheet(w, h, ctx => {
+        const dirs = ['down','left','right','up'];
+        dirs.forEach((dir, dIndex) => {
+          for (let f=0; f<3; f++) {
+            const fx = (dIndex*3 + f) * PLAYER_FRAME_W;
+            const fy = 0;
+            drawPlayerFrame(ctx, fx, fy, dir, f);
+          }
         });
-        window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+      });
+    })();
 
-        // Mobile controls
-        function bindMobile(id, key) {
-            const btn = document.getElementById(id);
-            if (!btn) return;
-            btn.addEventListener("touchstart", (e) => {
-                e.preventDefault();
-                keys[key] = true;
-                btn.style.transform = "scale(0.85)";
-                btn.style.background = "rgba(200,20,20,0.7)";
-            }, { passive: false });
-            btn.addEventListener("touchend", (e) => {
-                e.preventDefault();
-                keys[key] = false;
-                btn.style.transform = "scale(1)";
-                btn.style.background = "rgba(80,0,0,0.45)";
-            });
-            btn.addEventListener("touchcancel", () => {
-                keys[key] = false;
-                btn.style.transform = "scale(1)";
-                btn.style.background = "rgba(80,0,0,0.45)";
-            });
+    function drawPlayerFrame(ctx, x, y, dir, frame) {
+      ctx.save();
+      ctx.translate(x+12, y+2);
+      const bob = (frame===1) ? -1 : (frame===2) ? 1 : 0;
+      // hat
+      ctx.fillStyle='#5a3a1a'; ctx.fillRect(-9,-20+bob,18,5);
+      ctx.fillStyle='#7a523a'; ctx.fillRect(-10,-22+bob,20,4);
+      // face
+      ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-15+bob,12,10);
+      ctx.fillStyle='#fff'; ctx.fillRect(-4,-13+bob,3,3); ctx.fillRect(2,-13+bob,3,3);
+      ctx.fillStyle='#000'; ctx.fillRect(-3,-12+bob,1,1); ctx.fillRect(3,-12+bob,1,1);
+      // body
+      ctx.fillStyle='#2a5a2a'; ctx.fillRect(-6,-4+bob,12,16);
+      ctx.fillStyle='#4a7a4a'; ctx.fillRect(-5,-3+bob,10,14);
+      // legs
+      const legShift = (frame%2===0) ? 2 : -2;
+      ctx.fillStyle='#3a2a1a'; ctx.fillRect(-5,12+bob,5,10); ctx.fillRect(1,12+bob-legShift,5,10);
+      // arms
+      ctx.fillStyle='#d4a574'; ctx.fillRect(-9,0+bob,4,10); ctx.fillRect(6,0+bob-legShift*0.5,4,10);
+      ctx.restore();
+    }
+
+    // NPC sprites
+    function drawNpcFrame(ctx, x, y, type, frame) {
+      ctx.save(); ctx.translate(x+10, y+2);
+      if (type==='elder') {
+        ctx.fillStyle='#ccc'; ctx.fillRect(-8,-20,16,6); // white hair
+        ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-14,12,10);
+        ctx.fillStyle='#6a4a2a'; ctx.fillRect(-5,-4,10,12);
+        ctx.fillStyle='#333'; ctx.fillRect(-2,-11,2,2); ctx.fillRect(4,-11,2,2); // eyes
+      } else if (type==='merchant') {
+        ctx.fillStyle='#c49a6a'; ctx.fillRect(-6,-14,12,10);
+        ctx.fillStyle='#a44'; ctx.fillRect(-6,-3,12,14);
+        ctx.fillStyle='#aa0'; ctx.fillRect(-2,-12,2,2); ctx.fillRect(3,-12,2,2);
+      }
+      ctx.restore();
+    }
+
+    function createNpcSheet(type) {
+      return createSpriteSheet(20*3, 28, ctx => {
+        for (let f=0; f<3; f++) drawNpcFrame(ctx, f*20, 0, type, f);
+      });
+    }
+    const elderSheet = createNpcSheet('elder');
+    const merchantSheet = createNpcSheet('merchant');
+
+    // Dialogue portraits (48x48)
+    function createPortrait(label, drawFn) {
+      return createSpriteSheet(48, 48, ctx => { ctx.save(); ctx.translate(24,24); drawFn(ctx); ctx.restore(); });
+    }
+    const playerPortrait = createPortrait('elias', ctx => {
+      ctx.fillStyle='#d4a574'; ctx.fillRect(-10,-12,20,18);
+      ctx.fillStyle='#2a5a2a'; ctx.fillRect(-8,6,16,8);
+      ctx.fillStyle='#5a3a1a'; ctx.fillRect(-10,-16,20,6);
+      ctx.fillStyle='#fff'; ctx.fillRect(-5,-8,4,4); ctx.fillRect(2,-8,4,4);
+    });
+    const elderPortrait = createPortrait('elder', ctx => {
+      ctx.fillStyle='#ddd'; ctx.fillRect(-12,-14,24,8);
+      ctx.fillStyle='#d4a574'; ctx.fillRect(-8,-6,16,16);
+      ctx.fillStyle='#444'; ctx.fillRect(-3,-3,3,3); ctx.fillRect(4,-3,3,3);
+    });
+
+    // Enemy sprites (battle, larger)
+    function createEnemySheet(type) {
+      return createSpriteSheet(64, 64, ctx => {
+        ctx.save(); ctx.translate(32,32);
+        if (type==='aswang') {
+          ctx.fillStyle='#5a1a1a'; ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(-8,-4,5,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(8,-4,5,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-8,-4,2,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(8,-4,2,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#fff'; ctx.fillRect(-10,10,20,6); // teeth
+        } else if (type==='tikbalang') {
+          ctx.fillStyle='#3a2a0a'; ctx.fillRect(-16,-20,32,40);
+          ctx.fillStyle='#6a4a1a'; ctx.fillRect(-12,-16,24,32);
+          ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(-6,-10,4,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(6,-10,4,0,Math.PI*2); ctx.fill();
         }
-        bindMobile("up", "w");
-        bindMobile("down", "s");
-        bindMobile("left", "a");
-        bindMobile("right", "d");
+        ctx.restore();
+      });
+    }
+    const aswangSheet = createEnemySheet('aswang');
+    const tikbalangSheet = createEnemySheet('tikbalang');
 
-        const actionBtn = document.getElementById("action-btn");
-        if (actionBtn) {
-            actionBtn.addEventListener("touchstart", (e) => {
-                e.preventDefault();
-                if (battle.active) {
-                    playerAttack();
-                } else {
-                    tryInteract();
-                }
-                actionBtn.style.transform = "scale(0.85)";
-                actionBtn.style.background = "rgba(255,40,40,0.8)";
-            }, { passive: false });
-            actionBtn.addEventListener("touchend", () => {
-                actionBtn.style.transform = "scale(1)";
-                actionBtn.style.background = "rgba(180,20,20,0.5)";
-            });
+    // ──────────────────────────────────
+    // TILE MAP
+    // ──────────────────────────────────
+    const TILE_GRASS = 0, TILE_PATH = 1, TILE_WALL = 2, TILE_WATER = 3, TILE_HOUSE = 4;
+    const tileColors = {
+      [TILE_GRASS]: '#1a3a1a', [TILE_PATH]: '#5a4a2a', [TILE_WALL]: '#444',
+      [TILE_WATER]: '#113366', [TILE_HOUSE]: '#6a4a2a',
+    };
+
+    const map = [];
+    for (let y=0; y<MAP_H; y++) {
+      map[y] = [];
+      for (let x=0; x<MAP_W; x++) {
+        if (x<2||x>=MAP_W-2||y<2||y>=MAP_H-2) map[y][x] = TILE_WALL;
+        else if ((x>10&&x<16&&y>8&&y<14) || (x>30&&x<36&&y>22&&y<28)) map[y][x] = TILE_HOUSE;
+        else if ((x>4&&x<8&&y>20&&y<24)) map[y][x] = TILE_WATER;
+        else if ((x+y)%5===0) map[y][x] = TILE_PATH;
+        else map[y][x] = TILE_GRASS;
+      }
+    }
+
+    // ──────────────────────────────────
+    // NPC / OBJECT DATA
+    // ──────────────────────────────────
+    const npcs = [
+      { x:12, y:11, type:'elder', name:'Lolo Basilio', dialog: [
+        "Welcome to Barangay Balete, Elias.",
+        "Beware the aswang that roam at night.",
+        "Take this healing potion. [Received +1 Potion]"
+      ], action: ()=>{ player.potions++; }},
+      { x:33, y:25, type:'merchant', name:'Aling Rosa', dialog: [
+        "Need supplies? I sell potions and charms.",
+        "Come back when you have more gold."
+      ]}
+    ];
+
+    // ──────────────────────────────────
+    // GAME STATE
+    // ──────────────────────────────────
+    const player = {
+      x: 5*TILE_SIZE+16, y: 5*TILE_SIZE+16,
+      hp:100, maxHp:100, mp:50, maxMp:50, level:1, exp:0, expToLevel:30,
+      gold:0, potions:2,
+      direction:'down', moving:false, animFrame:0, animTimer:0,
+      moveSpeed: 2.5,
+    };
+
+    let battleActive = false, currentEnemy = null, battleMessage = '';
+    let dialogBoxActive = false, currentDialog = [], dialogIndex = 0;
+    let cutsceneActive = false, cutsceneQueue = [];
+    let screenShake = 0, battleFlash = 0;
+    let battleParticles = [];
+
+    // ──────────────────────────────────
+    // DIALOGUE SYSTEM
+    // ──────────────────────────────────
+    function startDialogue(npc) {
+      dialogBoxActive = true;
+      currentDialog = npc.dialog.slice();
+      dialogIndex = 0;
+      document.getElementById('dialogBox').style.display = 'block';
+      updateDialogueBox(npc);
+    }
+    function advanceDialogue() {
+      dialogIndex++;
+      if (dialogIndex >= currentDialog.length) {
+        endDialogue();
+      } else {
+        updateDialogueBox(null);
+      }
+    }
+    function endDialogue() {
+      dialogBoxActive = false;
+      document.getElementById('dialogBox').style.display = 'none';
+      // check if npc had action on last line
+      const npc = npcs.find(n => n.dialog === currentDialog);
+      if (npc && npc.action && dialogIndex === currentDialog.length-1) npc.action();
+      currentDialog = [];
+    }
+    function updateDialogueBox(npc) {
+      const textEl = document.getElementById('dialogText');
+      const portraitCanvas = document.getElementById('dialogPortrait');
+      const pCtx = portraitCanvas.getContext('2d');
+      pCtx.clearRect(0,0,70,70);
+      if (npc && npc.type==='elder') pCtx.drawImage(elderPortrait,0,0,48,48,11,11,48,48);
+      else if (npc && npc.type==='merchant') {
+        pCtx.fillStyle='#c49a6a'; pCtx.fillRect(11,11,48,48); // placeholder
+      } else pCtx.drawImage(playerPortrait,0,0,48,48,11,11,48,48);
+      textEl.textContent = currentDialog[dialogIndex] || '';
+    }
+
+    function tryInteract() {
+      const px = player.x, py = player.y;
+      for (const npc of npcs) {
+        const dx = px - (npc.x*TILE_SIZE+16), dy = py - (npc.y*TILE_SIZE+16);
+        if (Math.sqrt(dx*dx+dy*dy) < 40) {
+          startDialogue(npc);
+          return;
         }
-
-        // ── GAME STATE ────────────────────────
-        const player = {
-            x: 600,
-            y: 600,
-            width: 28,
-            height: 42,
-            speed: 3.2,
-            hp: 100,
-            mp: 50,
-            maxHp: 100,
-            maxMp: 50,
-            level: 1,
-            exp: 0,
-            expToLevel: 30,
-            direction: "down",
-            animFrame: 0,
-            animTimer: 0,
-            animSpeed: 8,
-            moving: false,
-            gold: 0,
-            potions: 2,
-            attackPower: 12,
-            magicPower: 25,
-            critChance: 0.1,
-            dodgeChance: 0.05,
-        };
-
-        // Enemy types
-        const enemyTypes = [
-            { name: "Forest Aswang", hp: 100, maxHp: 100, damage: 10, exp: 25, gold: 15, color: "#8b1a1a",
-                desc: "A shape-shifting ghoul with elongated limbs." },
-            { name: "Tikbalang", hp: 150, maxHp: 150, damage: 14, exp: 40, gold: 25, color: "#4a2a0a",
-                desc: "A towering horse-demon with burning eyes." },
-            { name: "Manananggal", hp: 80, maxHp: 80, damage: 16, exp: 35, gold: 20, color: "#5a105a",
-                desc: "A winged torso that feeds on the living." },
-            { name: "Tiyanak", hp: 60, maxHp: 60, damage: 18, exp: 30, gold: 10, color: "#2a5a2a",
-                desc: "A deceiving infant-like creature of the forest." },
-            { name: "Kapre Warrior", hp: 200, maxHp: 200, damage: 20, exp: 60, gold: 40, color: "#3a1a00",
-                desc: "A giant tree-dwelling elemental spirit." },
-        ];
-
-        let currentEnemy = null;
-        const battle = {
-            active: false,
-            flash: 0,
-            message: "",
-            enemyDefeated: false,
-            shakeTimer: 0,
-            particlePool: [],
-        };
-
-        // World objects (shrines, loot spots)
-        const worldObjects = [];
-        for (let i = 0; i < 15; i++) {
-            worldObjects.push({
-                x: 300 + Math.random() * 3000,
-                y: 300 + Math.random() * 3000,
-                type: Math.random() < 0.4 ? "shrine" : "loot",
-                collected: false,
-                respawnTimer: 0,
-            });
-        }
-
-        function tryInteract() {
-            const px = player.x;
-            const py = player.y;
-            for (const obj of worldObjects) {
-                const dx = px - obj.x;
-                const dy = py - obj.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 60 && !obj.collected) {
-                    if (obj.type === "shrine") {
-                        player.hp = Math.min(player.maxHp, player.hp + 30);
-                        player.mp = Math.min(player.maxMp, player.mp + 15);
-                        obj.collected = true;
-                        obj.respawnTimer = 600;
-                        showBattleMessage("✨ You prayed at an ancient shrine. HP & MP restored!");
-                        spawnFloatText("+30 HP", W / 2, H / 2 - 40, "#66ff66");
-                    } else if (obj.type === "loot") {
-                        const goldFound = Math.floor(Math.random() * 20) + 10;
-                        player.gold += goldFound;
-                        obj.collected = true;
-                        obj.respawnTimer = 400;
-                        showBattleMessage(`💰 You found ${goldFound} gold coins!`);
-                        spawnFloatText(`+${goldFound} G`, W / 2, H / 2 - 40, "#ffcc00");
-                    }
-                    return;
-                }
-            }
-            showBattleMessage("Nothing to interact with here...");
-        }
-
-        // ── BATTLE SYSTEM ─────────────────────
-        function startBattle() {
-            if (battle.active) return;
-            const enemyData = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-            currentEnemy = {
-                ...enemyData,
-                hp: enemyData.maxHp,
-                stunned: false,
-            };
-            battle.active = true;
-            battle.enemyDefeated = false;
-            battle.flash = 0;
-            battle.shakeTimer = 0;
-            battle.particlePool = [];
-            showBattleMessage(`⚠️ <span class="highlight">${currentEnemy.name}</span> appears!<br><small>${currentEnemy.desc}</small>`);
-            triggerScreenShake(6);
-        }
-
-        function endBattle() {
-            battle.enemyDefeated = true;
-            setTimeout(() => {
-                battle.active = false;
-                currentEnemy = null;
-                battle.particlePool = [];
-                updateBattleText();
-                checkLevelUp();
-            }, 1400);
-        }
-
-        function playerAttack() {
-            if (!battle.active || battle.enemyDefeated || !currentEnemy) return;
-            if (currentEnemy.stunned) {
-                currentEnemy.stunned = false;
-            }
-            const isCrit = Math.random() < player.critChance;
-            const baseDmg = Math.floor(Math.random() * player.attackPower) + 8;
-            const dmg = isCrit ? Math.floor(baseDmg * 1.8) : baseDmg;
-            currentEnemy.hp -= dmg;
-            battle.flash = 18;
-            triggerScreenShake(isCrit ? 10 : 4);
-            spawnBattleParticles(W - 250, 200, "#ff4444", 12);
-            spawnFloatText((isCrit ? "CRIT! " : "") + dmg, W - 250, 160, isCrit ? "#ffdd00" : "#ff6666");
-
-            const msg = isCrit ?
-                `🔥 <span class="highlight">CRITICAL HIT!</span> Elias strikes for <span class="highlight">${dmg}</span> damage!` :
-                `⚔️ Elias attacks for <span class="highlight">${dmg}</span> damage!`;
-            showBattleMessage(msg);
-
-            if (currentEnemy.hp <= 0) {
-                currentEnemy.hp = 0;
-                player.exp += currentEnemy.exp;
-                player.gold += currentEnemy.gold;
-                showBattleMessage(
-                    `💀 <span class="highlight">${currentEnemy.name} defeated!</span><br>+${currentEnemy.exp} EXP | +${currentEnemy.gold} Gold`
-                    );
-                spawnFloatText("VICTORY!", W / 2, H / 2 - 60, "#ffcc00");
-                endBattle();
-                return;
-            }
-            setTimeout(enemyAttack, 800);
-        }
-
-        function playerMagic() {
-            if (!battle.active || battle.enemyDefeated || !currentEnemy) return;
-            if (player.mp < 8) {
-                showBattleMessage("❌ Not enough MP for Shadow Flame!");
-                return;
-            }
-            player.mp -= 8;
-            const dmg = Math.floor(Math.random() * player.magicPower) + 18;
-            currentEnemy.hp -= dmg;
-            currentEnemy.stunned = Math.random() < 0.3;
-            battle.flash = 28;
-            triggerScreenShake(8);
-            spawnBattleParticles(W - 250, 200, "#9944ff", 20);
-            spawnFloatText(dmg, W - 250, 160, "#cc88ff");
-
-            let msg = `🔮 <span class="magic-text">Shadow Flame</span> deals <span class="magic-text">${dmg}</span> damage!`;
-            if (currentEnemy.stunned) msg += "<br>⚡ Enemy is stunned!";
-            showBattleMessage(msg);
-
-            if (currentEnemy.hp <= 0) {
-                currentEnemy.hp = 0;
-                player.exp += currentEnemy.exp + 5;
-                player.gold += currentEnemy.gold;
-                showBattleMessage(
-                    `💀 <span class="highlight">${currentEnemy.name} burns into darkness!</span><br>+${currentEnemy.exp + 5} EXP | +${currentEnemy.gold} Gold`
-                    );
-                spawnFloatText("OBLITERATED!", W / 2, H / 2 - 60, "#ff8800");
-                endBattle();
-                return;
-            }
-            setTimeout(enemyAttack, 900);
-        }
-
-        function playerHeal() {
-            if (!battle.active || battle.enemyDefeated || !currentEnemy) return;
-            if (player.mp < 6) {
-                showBattleMessage("❌ Not enough MP for Light Prayer!");
-                return;
-            }
-            player.mp -= 6;
-            const heal = Math.floor(Math.random() * 22) + 18;
-            const actualHeal = Math.min(heal, player.maxHp - player.hp);
-            player.hp += actualHeal;
-            battle.flash = 10;
-            spawnFloatText("+" + actualHeal, W / 2, H / 2 + 80, "#66ff66");
-            showBattleMessage(`💚 <span class="heal-text">Light Prayer</span> restores <span class="heal-text">${actualHeal}</span> HP!`);
-            spawnBattleParticles(W / 2, H / 2 + 100, "#66ff66", 8);
-            setTimeout(enemyAttack, 900);
-        }
-
-        function enemyAttack() {
-            if (!battle.active || battle.enemyDefeated || !currentEnemy) return;
-            if (currentEnemy.stunned) {
-                currentEnemy.stunned = false;
-                showBattleMessage("😵 The enemy is stunned and skips its turn!");
-                return;
-            }
-            if (Math.random() < player.dodgeChance) {
-                showBattleMessage("🌀 Elias swiftly dodges the attack!");
-                spawnFloatText("DODGE!", W / 2, H / 2 - 20, "#ffff66");
-                return;
-            }
-            const dmg = Math.floor(Math.random() * currentEnemy.damage) + 4;
-            player.hp -= dmg;
-            if (player.hp < 0) player.hp = 0;
-            battle.flash = 14;
-            triggerScreenShake(7);
-            spawnFloatText(dmg, W / 2, H / 2 - 20, "#ff3333");
-            showBattleMessage(`👹 ${currentEnemy.name} attacks for <span class="highlight">${dmg}</span> damage!`);
-
-            if (player.hp <= 0) {
-                showBattleMessage("💔 <span class='highlight'>Elias has fallen...</span> Respawning at shrine...");
-                setTimeout(() => {
-                    player.hp = Math.floor(player.maxHp * 0.5);
-                    player.mp = Math.floor(player.maxMp * 0.5);
-                    battle.active = false;
-                    currentEnemy = null;
-                    battle.particlePool = [];
-                    player.x = 600;
-                    player.y = 600;
-                    updateBattleText();
-                }, 2000);
-            }
-        }
-
-        function checkLevelUp() {
-            while (player.exp >= player.expToLevel) {
-                player.exp -= player.expToLevel;
-                player.level++;
-                player.expToLevel = Math.floor(player.expToLevel * 1.5);
-                player.maxHp += 15;
-                player.hp = player.maxHp;
-                player.maxMp += 8;
-                player.mp = player.maxMp;
-                player.attackPower += 3;
-                player.magicPower += 5;
-                player.critChance = Math.min(0.35, player.critChance + 0.02);
-                showBattleMessage(
-                    `🎉 <span style="color:#ffcc00;font-size:1.2em;">LEVEL UP!</span> Elias reaches Level ${player.level}!<br>HP/MP restored & stats increased!`
-                    );
-                spawnFloatText("LEVEL " + player.level + "!", W / 2, H / 2 - 80, "#ffcc00");
-                triggerScreenShake(5);
-            }
-        }
-
-        function showBattleMessage(msg) {
-            battle.message = msg;
-            updateBattleText();
-        }
-
-        function updateBattleText() {
-            const el = document.getElementById("battle-text");
-            if (!el) return;
-            if (battle.active) {
-                el.innerHTML = battle.message +
-                    '<br><br><small style="color:#aaa;">[1] Attack &nbsp;|&nbsp; [2] Shadow Flame &nbsp;|&nbsp; [3] Heal</small>';
-            } else {
-                el.innerHTML =
-                    'Explore the haunted barangay...<br><small style="color:#887766;">WASD = Move | E = Interact | Find shrines & loot</small>';
-            }
-        }
-
-        // ── VISUAL EFFECTS ────────────────────
-        function triggerScreenShake(intensity) {
-            battle.shakeTimer = Math.max(battle.shakeTimer, intensity);
-        }
-
-        function spawnFloatText(text, x, y, color) {
-            const el = document.createElement("div");
-            el.className = "damage-float";
-            el.textContent = text;
-            el.style.left = x + "px";
-            el.style.top = y + "px";
-            el.style.color = color;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
-        }
-
-        function spawnBattleParticles(cx, cy, color, count) {
-            for (let i = 0; i < count; i++) {
-                battle.particlePool.push({
-                    x: cx,
-                    y: cy,
-                    vx: (Math.random() - 0.5) * 8,
-                    vy: (Math.random() - 0.5) * 8 - 3,
-                    life: 25 + Math.random() * 20,
-                    color: color,
-                    size: 2 + Math.random() * 5,
-                });
-            }
-        }
-
-        // ── UPDATE LOOP ──────────────────────
-        function update() {
-            // Screen shake
-            if (battle.shakeTimer > 0) battle.shakeTimer--;
-
-            // Update particles
-            for (const p of battle.particlePool) {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.15;
-                p.life--;
-            }
-            battle.particlePool = battle.particlePool.filter(p => p.life > 0);
-
-            // Update world objects
-            for (const obj of worldObjects) {
-                if (obj.collected && obj.respawnTimer > 0) {
-                    obj.respawnTimer--;
-                    if (obj.respawnTimer <= 0) obj.collected = false;
-                }
-            }
-
-            if (!battle.active) {
-                player.moving = false;
-                let mx = 0,
-                    my = 0;
-                if (keys["w"] || keys["arrowup"]) { my = -1;
-                    player.direction = "up";
-                    player.moving = true; }
-                if (keys["s"] || keys["arrowdown"]) { my = 1;
-                    player.direction = "down";
-                    player.moving = true; }
-                if (keys["a"] || keys["arrowleft"]) { mx = -1;
-                    player.direction = "left";
-                    player.moving = true; }
-                if (keys["d"] || keys["arrowright"]) { mx = 1;
-                    player.direction = "right";
-                    player.moving = true; }
-
-                if (mx !== 0 && my !== 0) { mx *= 0.707;
-                    my *= 0.707; }
-                player.x += mx * player.speed;
-                player.y += my * player.speed;
-                player.x = Math.max(100, Math.min(4000, player.x));
-                player.y = Math.max(100, Math.min(4000, player.y));
-
-                if (player.moving) {
-                    player.animTimer++;
-                    if (player.animTimer >= player.animSpeed) {
-                        player.animFrame = (player.animFrame + 1) % 4;
-                        player.animTimer = 0;
-                    }
-                } else {
-                    player.animFrame = 0;
-                    player.animTimer = 0;
-                }
-
-                // Random encounter
-                if (Math.random() < 0.002) {
-                    startBattle();
-                }
-            }
-
-            // Update UI elements
-            updateUI();
-        }
-
-        function updateUI() {
-            const hpText = document.getElementById("hp-text");
-            const mpText = document.getElementById("mp-text");
-            const lvlText = document.getElementById("lvl-text");
-            const expText = document.getElementById("exp-text");
-            const hpBar = document.getElementById("hp-bar");
-            const mpBar = document.getElementById("mp-bar");
-            const expBar = document.getElementById("exp-bar");
-
-            if (hpText) hpText.textContent = `${player.hp}/${player.maxHp}`;
-            if (mpText) mpText.textContent = `${player.mp}/${player.maxMp}`;
-            if (lvlText) lvlText.textContent = player.level;
-            if (expText) expText.textContent = `${player.exp}/${player.expToLevel}`;
-            if (hpBar) hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
-            if (mpBar) mpBar.style.width = `${(player.mp / player.maxMp) * 100}%`;
-            if (expBar) expBar.style.width = `${(player.exp / player.expToLevel) * 100}%`;
-
-            updateBattleText();
-        }
-
-        // ── RENDER ────────────────────────────
-        function drawGround() {
-            // Dark earth
-            const gradient = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, Math.max(W, H));
-            gradient.addColorStop(0, "#1a1a0d");
-            gradient.addColorStop(0.5, "#0f0f08");
-            gradient.addColorStop(1, "#050503");
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, W, H);
-
-            // Grid overlay for pixel feel
-            const gridSize = 48;
-            const camX = player.x - W / 2;
-            const camY = player.y - H / 2;
-            const startX = -(camX % gridSize);
-            const startY = -(camY % gridSize);
-
-            ctx.strokeStyle = "rgba(255,255,240,0.025)";
-            ctx.lineWidth = 1;
-            for (let x = startX; x < W; x += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, H);
-                ctx.stroke();
-            }
-            for (let y = startY; y < H; y += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(W, y);
-                ctx.stroke();
-            }
-
-            // Scattered grass tufts
-            ctx.fillStyle = "rgba(30,60,20,0.5)";
-            for (let i = 0; i < 200; i++) {
-                const gx = (i * 317 + 150 - camX * 0.6) % (W + 200) - 100;
-                const gy = (i * 197 + 280 - camY * 0.6) % (H + 200) - 100;
-                if (gx > -20 && gx < W + 20 && gy > -20 && gy < H + 20) {
-                    ctx.fillRect(gx, gy, 3, 8);
-                    ctx.fillRect(gx + 4, gy - 2, 2, 6);
-                }
-            }
-        }
-
-        function drawTrees() {
-            const camX = player.x - W / 2;
-            const camY = player.y - H / 2;
-
-            for (let i = 0; i < 55; i++) {
-                const seed = i * 173 + 42;
-                const tx = ((seed * 317) % 4200) - 100;
-                const ty = ((seed * 241) % 4200) - 100;
-                const sx = tx - camX;
-                const sy = ty - camY;
-
-                if (sx < -120 || sx > W + 120 || sy < -120 || sy > H + 120) continue;
-
-                const treeScale = 0.7 + (seed % 100) / 200;
-                const trunkW = 8 * treeScale;
-                const trunkH = 28 * treeScale;
-                const canopyR = 28 * treeScale;
-
-                // Trunk
-                ctx.fillStyle = "#2a1508";
-                ctx.fillRect(sx - trunkW / 2, sy, trunkW, trunkH);
-                ctx.fillStyle = "#3d1f0c";
-                ctx.fillRect(sx - trunkW / 4, sy, trunkW / 2, trunkH);
-
-                // Canopy - layered circles
-                ctx.fillStyle = "#0d3a0d";
-                ctx.beginPath();
-                ctx.arc(sx, sy - 6, canopyR, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = "#145014";
-                ctx.beginPath();
-                ctx.arc(sx - canopyR * 0.3, sy - canopyR * 0.4, canopyR * 0.7, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = "#1a601a";
-                ctx.beginPath();
-                ctx.arc(sx + canopyR * 0.25, sy - canopyR * 0.5, canopyR * 0.6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = "#0f4f0f";
-                ctx.beginPath();
-                ctx.arc(sx, sy + 2, canopyR * 0.65, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Highlights
-                ctx.fillStyle = "rgba(180,255,180,0.08)";
-                ctx.beginPath();
-                ctx.arc(sx - canopyR * 0.2, sy - canopyR * 0.6, canopyR * 0.35, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Draw world objects
-            for (const obj of worldObjects) {
-                const ox = obj.x - camX;
-                const oy = obj.y - camY;
-                if (ox < -60 || ox > W + 60 || oy < -60 || oy > H + 60) continue;
-                if (obj.collected) continue;
-
-                if (obj.type === "shrine") {
-                    // Stone shrine
-                    ctx.fillStyle = "#555544";
-                    ctx.fillRect(ox - 10, oy - 15, 20, 30);
-                    ctx.fillStyle = "#777766";
-                    ctx.fillRect(ox - 8, oy - 13, 16, 26);
-                    ctx.fillStyle = "#ffcc44";
-                    ctx.beginPath();
-                    ctx.arc(ox, oy - 10, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = "rgba(255,200,100,0.3)";
-                    ctx.beginPath();
-                    ctx.arc(ox, oy - 10, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (obj.type === "loot") {
-                    // Glowing chest/spot
-                    ctx.fillStyle = "#886633";
-                    ctx.fillRect(ox - 6, oy - 4, 12, 10);
-                    ctx.fillStyle = "#aa8844";
-                    ctx.fillRect(ox - 4, oy - 3, 8, 8);
-                    ctx.fillStyle = "rgba(255,220,100,0.5)";
-                    ctx.beginPath();
-                    ctx.arc(ox, oy - 2, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        }
-
-        function drawPlayerSprite(cx, cy, direction, frame) {
-            ctx.save();
-            ctx.translate(cx, cy);
-
-            // Bob animation
-            const bobY = (frame === 1 || frame === 3) ? -2 : (frame === 2 ? 0 : 1);
-            ctx.translate(0, bobY);
-
-            const s = 1; // scale unit
-            const sx = -14;
-            const sy = -22;
-
-            // ── Shadow ──
-            ctx.fillStyle = "rgba(0,0,0,0.4)";
-            ctx.beginPath();
-            ctx.ellipse(0, 20, 12, 5, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // ── Legs ──
-            const legSpread = (frame === 1 || frame === 3) ? 5 : 0;
-            const legDir = (frame === 1) ? -1 : (frame === 3) ? 1 : 0;
-
-            // Left leg
-            ctx.fillStyle = "#3a2a1a";
-            ctx.fillRect(sx + 2 - legSpread * (legDir < 0 ? 1 : 0), sy + 26, 6, 14);
-            ctx.fillStyle = "#4a3828";
-            ctx.fillRect(sx + 3 - legSpread * (legDir < 0 ? 1 : 0), sy + 26, 4, 12);
-            // Boot
-            ctx.fillStyle = "#2a1a0a";
-            ctx.fillRect(sx + 1 - legSpread * (legDir < 0 ? 1 : 0), sy + 36, 8, 5);
-
-            // Right leg
-            ctx.fillStyle = "#3a2a1a";
-            ctx.fillRect(sx + 8 + legSpread * (legDir > 0 ? 1 : 0), sy + 26, 6, 14);
-            ctx.fillStyle = "#4a3828";
-            ctx.fillRect(sx + 9 + legSpread * (legDir > 0 ? 1 : 0), sy + 26, 4, 12);
-            ctx.fillStyle = "#2a1a0a";
-            ctx.fillRect(sx + 7 + legSpread * (legDir > 0 ? 1 : 0), sy + 36, 8, 5);
-
-            // ── Body / Torso ──
-            ctx.fillStyle = "#5a3a2a";
-            ctx.fillRect(sx + 3, sy + 10, 10, 18);
-            ctx.fillStyle = "#6b4a38";
-            ctx.fillRect(sx + 4, sy + 11, 8, 15);
-            // Vest
-            ctx.fillStyle = "#2a4a2a";
-            ctx.fillRect(sx + 3, sy + 10, 10, 14);
-            ctx.fillStyle = "#3a5a3a";
-            ctx.fillRect(sx + 4, sy + 11, 8, 12);
-            // Belt
-            ctx.fillStyle = "#8a6a3a";
-            ctx.fillRect(sx + 3, sy + 22, 10, 4);
-
-            // ── Arms ──
-            const armSwing = (frame === 1) ? 4 : (frame === 3) ? -4 : (frame === 2) ? 0 : 2;
-            // Left arm
-            ctx.fillStyle = "#c49a6a";
-            ctx.fillRect(sx - 2 + armSwing * 0.5, sy + 12, 5, 12);
-            ctx.fillStyle = "#5a3a2a";
-            ctx.fillRect(sx - 1 + armSwing * 0.5, sy + 13, 3, 10);
-            // Right arm
-            ctx.fillStyle = "#c49a6a";
-            ctx.fillRect(sx + 13 - armSwing * 0.5, sy + 12, 5, 12);
-            ctx.fillStyle = "#5a3a2a";
-            ctx.fillRect(sx + 14 - armSwing * 0.5, sy + 13, 3, 10);
-            // Bolo knife on right side
-            ctx.fillStyle = "#888";
-            ctx.fillRect(sx + 16 - armSwing * 0.3, sy + 20, 2, 10);
-            ctx.fillStyle = "#ccc";
-            ctx.fillRect(sx + 15 - armSwing * 0.3, sy + 20, 4, 8);
-
-            // ── Head ──
-            ctx.fillStyle = "#c49a6a";
-            ctx.fillRect(sx + 4, sy, 10, 12);
-            ctx.fillStyle = "#d4aa7a";
-            ctx.fillRect(sx + 5, sy + 1, 8, 10);
-
-            // Eyes
-            const eyeShiftX = direction === "right" ? 1 : direction === "left" ? -1 : 0;
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(sx + 5 + eyeShiftX, sy + 3, 3, 3);
-            ctx.fillRect(sx + 10 + eyeShiftX, sy + 3, 3, 3);
-            ctx.fillStyle = "#111";
-            ctx.fillRect(sx + 6 + eyeShiftX, sy + 4, 2, 2);
-            ctx.fillRect(sx + 11 + eyeShiftX, sy + 4, 2, 2);
-
-            // Mouth
-            ctx.fillStyle = "#8a5a4a";
-            ctx.fillRect(sx + 7, sy + 8, 4, 1);
-
-            // ── Salakot Hat ──
-            ctx.fillStyle = "#6b4226";
-            ctx.fillRect(sx + 1, sy - 5, 16, 7);
-            ctx.fillStyle = "#7b5236";
-            ctx.fillRect(sx + 2, sy - 6, 14, 8);
-            ctx.fillStyle = "#8b6246";
-            ctx.fillRect(sx + 3, sy - 7, 12, 6);
-            // Hat brim
-            ctx.fillStyle = "#5a3216";
-            ctx.fillRect(sx - 2, sy - 2, 20, 3);
-            ctx.fillStyle = "#6b4226";
-            ctx.fillRect(sx - 1, sy - 3, 18, 4);
-
-            ctx.restore();
-        }
-
-        function drawEnemySprite(cx, cy, enemyData) {
-            ctx.save();
-            ctx.translate(cx, cy);
-
-            // Floating bob
-            const bob = Math.sin(Date.now() / 600) * 4;
-            ctx.translate(0, bob);
-
-            // Shadow
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.beginPath();
-            ctx.ellipse(0, 55, 40, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Body
-            const col = enemyData.color || "#8b1a1a";
-            ctx.fillStyle = col;
-            ctx.beginPath();
-            ctx.arc(0, 10, 35, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "rgba(0,0,0,0.3)";
-            ctx.beginPath();
-            ctx.arc(-8, -5, 18, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Glowing eyes
-            const eyeGlow = 0.6 + Math.sin(Date.now() / 300) * 0.4;
-            ctx.fillStyle = `rgba(255,200,0,${eyeGlow})`;
-            ctx.beginPath();
-            ctx.arc(-12, -8, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(12, -8, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(-12, -8, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(12, -8, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Arms/tentacles
-            ctx.fillStyle = col;
-            ctx.fillRect(-45, 5, 20, 8);
-            ctx.fillRect(25, 5, 20, 8);
-            ctx.fillStyle = "rgba(0,0,0,0.4)";
-            ctx.fillRect(-48, 8, 26, 4);
-            ctx.fillRect(22, 8, 26, 4);
-
-            // Teeth
-            ctx.fillStyle = "#fff";
-            for (let i = -3; i <= 3; i++) {
-                ctx.fillRect(i * 7 - 2, 20, 4, 7);
-            }
-            ctx.fillStyle = "#ddd";
-            for (let i = -3; i <= 3; i++) {
-                ctx.fillRect(i * 7 - 1, 21, 2, 5);
-            }
-
-            ctx.restore();
-        }
-
-        function drawFireflies() {
-            const camX = player.x - W / 2;
-            const camY = player.y - H / 2;
-            const t = Date.now() / 1000;
-
-            for (let i = 0; i < 30; i++) {
-                const seed = i * 419 + 77;
-                const fx = ((seed * 271) % 5000) - 300 - camX;
-                const fy = ((seed * 193) % 5000) - 300 - camY;
-                const alpha = 0.3 + Math.sin(t * 3 + i * 2.7) * 0.4 + Math.cos(t * 2.1 + i * 1.3) * 0.3;
-                const sz = 2 + Math.sin(t * 4 + i) * 1.5;
-
-                if (fx > -30 && fx < W + 30 && fy > -30 && fy < H + 30) {
-                    ctx.fillStyle = `rgba(255,255,180,${Math.max(0, alpha)})`;
-                    ctx.beginPath();
-                    ctx.arc(fx, fy, Math.max(1, sz), 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = `rgba(255,255,220,${Math.max(0, alpha * 0.7)})`;
-                    ctx.beginPath();
-                    ctx.arc(fx, fy, Math.max(0.5, sz * 1.8), 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        }
-
-        function drawVignette() {
-            const gradient = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) *
-                0.75);
-            gradient.addColorStop(0, "rgba(0,0,0,0)");
-            gradient.addColorStop(0.6, "rgba(0,0,0,0.35)");
-            gradient.addColorStop(1, "rgba(0,0,0,0.85)");
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, W, H);
-        }
-
-        function drawBattleScene() {
-            // Dark overlay
-            ctx.fillStyle = "rgba(2,0,0,0.93)";
-            ctx.fillRect(0, 0, W, H);
-
-            // Battle flash
-            if (battle.flash > 0) {
-                ctx.fillStyle = `rgba(255,30,30,${battle.flash / 40})`;
-                ctx.fillRect(0, 0, W, H);
-                battle.flash--;
-            }
-
-            // Bottom panel
-            const panelY = H - 240;
-            const panelGrad = ctx.createLinearGradient(0, panelY, 0, H);
-            panelGrad.addColorStop(0, "#1a0505");
-            panelGrad.addColorStop(0.3, "#0d0202");
-            panelGrad.addColorStop(1, "#050000");
-            ctx.fillStyle = panelGrad;
-            ctx.fillRect(0, panelY, W, 240);
-
-            // Ornate border
-            ctx.strokeStyle = "#8b3a3a";
-            ctx.lineWidth = 5;
-            ctx.strokeRect(8, panelY + 4, W - 16, 232);
-            ctx.strokeStyle = "#5a1a1a";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(14, panelY + 10, W - 28, 220);
-
-            // Corner ornaments
-            const corners = [
-                [14, panelY + 10],
-                [W - 14, panelY + 10],
-                [14, panelY + 230],
-                [W - 14, panelY + 230]
-            ];
-            for (const [cx, cy] of corners) {
-                ctx.fillStyle = "#aa5555";
-                ctx.beginPath();
-                ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = "#ff8888";
-                ctx.beginPath();
-                ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Enemy name
-            if (currentEnemy) {
-                ctx.fillStyle = "#ffddaa";
-                ctx.font = "bold 28px Georgia, serif";
-                ctx.textAlign = "center";
-                ctx.fillText(currentEnemy.name, W / 2, 70);
-
-                // Enemy HP bar
-                const ebx = W / 2 - 150;
-                const eby = 90;
-                ctx.fillStyle = "#330000";
-                ctx.fillRect(ebx, eby, 300, 22);
-                ctx.strokeStyle = "#660000";
-                ctx.lineWidth = 3;
-                ctx.strokeRect(ebx, eby, 300, 22);
-                const ehpPct = currentEnemy.hp / currentEnemy.maxHp;
-                const ehpGrad = ctx.createLinearGradient(ebx, eby, ebx + 300, eby);
-                ehpGrad.addColorStop(0, "#cc0000");
-                ehpGrad.addColorStop(1, "#ff4444");
-                ctx.fillStyle = ehpGrad;
-                ctx.fillRect(ebx + 2, eby + 2, 296 * ehpPct, 18);
-                ctx.fillStyle = "#fff";
-                ctx.font = "bold 13px Georgia, serif";
-                ctx.fillText(`${currentEnemy.hp}/${currentEnemy.maxHp}`, W / 2, eby + 16);
-
-                // Draw enemy sprite
-                drawEnemySprite(W - 200, 220, currentEnemy);
-
-                // Stunned indicator
-                if (currentEnemy.stunned) {
-                    ctx.fillStyle = "#ffcc00";
-                    ctx.font = "bold 16px Georgia, serif";
-                    ctx.fillText("⚡ STUNNED ⚡", W - 200, 310);
-                }
-            }
-
-            // Player panel in battle
-            ctx.fillStyle = "#ffddaa";
-            ctx.font = "bold 20px Georgia, serif";
-            ctx.textAlign = "left";
-            ctx.fillText("ELIAS", 60, panelY + 40);
-
-            // HP bar
-            ctx.fillStyle = "#330000";
-            ctx.fillRect(60, panelY + 55, 240, 16);
-            ctx.fillStyle = "#cc2222";
-            ctx.fillRect(60, panelY + 55, 240 * (player.hp / player.maxHp), 16);
-            ctx.strokeStyle = "#661111";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(60, panelY + 55, 240, 16);
-            ctx.fillStyle = "#fff";
-            ctx.font = "11px Georgia, serif";
-            ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 65, panelY + 67);
-
-            // MP bar
-            ctx.fillStyle = "#001133";
-            ctx.fillRect(60, panelY + 80, 240, 13);
-            ctx.fillStyle = "#3366cc";
-            ctx.fillRect(60, panelY + 80, 240 * (player.mp / player.maxMp), 13);
-            ctx.strokeStyle = "#112266";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(60, panelY + 80, 240, 13);
-            ctx.fillStyle = "#aaccff";
-            ctx.fillText(`MP ${player.mp}/${player.maxMp}`, 65, panelY + 91);
-
-            // Command hints
-            ctx.fillStyle = "#ccaa88";
-            ctx.font = "14px Georgia, serif";
-            ctx.textAlign = "center";
-            ctx.fillText("[1] ATTACK", W / 2 - 160, panelY + 160);
-            ctx.fillText("[2] SHADOW FLAME", W / 2, panelY + 160);
-            ctx.fillText("[3] HEAL", W / 2 + 160, panelY + 160);
-
-            // Gold display
-            ctx.fillStyle = "#ffcc44";
-            ctx.fillText(`💰 ${player.gold} G`, W - 80, panelY + 40);
-
-            // Draw particles
-            for (const p of battle.particlePool) {
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life / 45;
-                ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-            }
-            ctx.globalAlpha = 1;
-            ctx.textAlign = "start";
-        }
-
-        function drawMinimap() {
-            minimapCtx.clearRect(0, 0, 90, 90);
-            minimapCtx.fillStyle = "rgba(0,0,0,0.6)";
-            minimapCtx.beginPath();
-            minimapCtx.arc(45, 45, 45, 0, Math.PI * 2);
-            minimapCtx.fill();
-
-            const scale = 0.018;
-            const cx = 45;
-            const cy = 45;
-
-            // Trees as tiny dots
-            for (let i = 0; i < 55; i++) {
-                const seed = i * 173 + 42;
-                const tx = ((seed * 317) % 4200) - 100;
-                const ty = ((seed * 241) % 4200) - 100;
-                const mx = cx + (tx - player.x) * scale;
-                const my = cy + (ty - player.y) * scale;
-                const dist = Math.sqrt((mx - cx) ** 2 + (my - cy) ** 2);
-                if (dist < 42) {
-                    minimapCtx.fillStyle = "rgba(30,100,30,0.7)";
-                    minimapCtx.fillRect(mx - 1, my - 1, 2, 2);
-                }
-            }
-
-            // World objects
-            for (const obj of worldObjects) {
-                if (obj.collected) continue;
-                const mx = cx + (obj.x - player.x) * scale;
-                const my = cy + (obj.y - player.y) * scale;
-                const dist = Math.sqrt((mx - cx) ** 2 + (my - cy) ** 2);
-                if (dist < 42) {
-                    minimapCtx.fillStyle = obj.type === "shrine" ? "#ffcc44" : "#ff8844";
-                    minimapCtx.fillRect(mx - 2, my - 2, 4, 4);
-                }
-            }
-
-            // Player dot
-            minimapCtx.fillStyle = "#ff4444";
-            minimapCtx.beginPath();
-            minimapCtx.arc(cx, cy, 3, 0, Math.PI * 2);
-            minimapCtx.fill();
-            minimapCtx.fillStyle = "#fff";
-            minimapCtx.beginPath();
-            minimapCtx.arc(cx, cy, 1.5, 0, Math.PI * 2);
-            minimapCtx.fill();
-
-            // Border
-            minimapCtx.strokeStyle = "#441111";
-            minimapCtx.lineWidth = 2;
-            minimapCtx.beginPath();
-            minimapCtx.arc(45, 45, 44, 0, Math.PI * 2);
-            minimapCtx.stroke();
-        }
-
-        function render() {
-            ctx.clearRect(0, 0, W, H);
-
-            if (battle.active) {
-                drawBattleScene();
-            } else {
-                drawGround();
-                drawTrees();
-                drawFireflies();
-
-                // Draw player at center
-                drawPlayerSprite(W / 2, H / 2, player.direction, player.animFrame);
-
-                drawVignette();
-            }
-
-            // Apply screen shake
-            if (battle.shakeTimer > 0) {
-                const sx = (Math.random() - 0.5) * battle.shakeTimer * 1.2;
-                const sy = (Math.random() - 0.5) * battle.shakeTimer * 1.2;
-                canvas.style.transform = `translate(${sx}px,${sy}px)`;
-            } else {
-                canvas.style.transform = "translate(0,0)";
-            }
-
-            // Update minimap
-            if (!battle.active) {
-                drawMinimap();
-            }
-        }
-
-        // ── GAME LOOP ─────────────────────────
-        function gameLoop() {
-            update();
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // ── INIT ──────────────────────────────
+      }
+      // check shrines etc.
+    }
+
+    // ──────────────────────────────────
+    // BATTLE SYSTEM
+    // ──────────────────────────────────
+    function startBattle(enemyType) {
+      battleActive = true;
+      const types = { aswang:{hp:80,maxHp:80,damage:8,exp:20,name:'Forest Aswang',sheet:aswangSheet},
+                     tikbalang:{hp:120,maxHp:120,damage:14,exp:35,name:'Tikbalang',sheet:tikbalangSheet} };
+      const t = types[enemyType] || types.aswang;
+      currentEnemy = { ...t, hp:t.maxHp, stunned:false };
+      battleMessage = `${currentEnemy.name} appears!`;
+      battleFlash = 10;
+      screenShake = 6;
+      updateUI();
+    }
+
+    function playerAttack() {
+      if (!battleActive || !currentEnemy) return;
+      const dmg = Math.floor(Math.random()*12)+8;
+      currentEnemy.hp -= dmg;
+      battleFlash = 15; screenShake = 8;
+      spawnBattleParticles(200, 100, '#f44', 15);
+      battleMessage = `Elias attacks for ${dmg} damage!`;
+      if (currentEnemy.hp <= 0) { victory(); return; }
+      setTimeout(enemyTurn, 900);
+      updateUI();
+    }
+    function playerMagic() {
+      if (player.mp < 8) { battleMessage='Not enough MP!'; return; }
+      player.mp -= 8;
+      const dmg = Math.floor(Math.random()*25)+15;
+      currentEnemy.hp -= dmg;
+      battleFlash = 25; screenShake = 10;
+      spawnBattleParticles(200, 100, '#a6f', 25);
+      battleMessage = `Shadow Flame deals ${dmg} damage!`;
+      if (currentEnemy.hp <= 0) { victory(); return; }
+      setTimeout(enemyTurn, 900);
+      updateUI();
+    }
+    function playerHeal() {
+      if (player.mp < 6) { battleMessage='Not enough MP!'; return; }
+      player.mp -= 6;
+      const heal = Math.min(20+Math.floor(Math.random()*15), player.maxHp-player.hp);
+      player.hp += heal;
+      spawnBattleParticles(400, 300, '#6f6', 10);
+      battleMessage = `Light Prayer restores ${heal} HP!`;
+      setTimeout(enemyTurn, 900);
+      updateUI();
+    }
+    function enemyTurn() {
+      if (!battleActive || !currentEnemy) return;
+      if (currentEnemy.stunned) { currentEnemy.stunned=false; battleMessage='Enemy is stunned!'; updateUI(); return; }
+      const dmg = Math.floor(Math.random()*currentEnemy.damage)+4;
+      player.hp -= dmg;
+      if (player.hp < 0) player.hp = 0;
+      battleFlash = 10; screenShake = 6;
+      battleMessage = `${currentEnemy.name} hits for ${dmg} damage!`;
+      if (player.hp <= 0) { gameOver(); return; }
+      updateUI();
+    }
+    function victory() {
+      player.exp += currentEnemy.exp;
+      player.gold += 15;
+      battleMessage = `${currentEnemy.name} defeated! +${currentEnemy.exp} EXP`;
+      checkLevelUp();
+      setTimeout(() => { battleActive = false; currentEnemy=null; updateUI(); }, 1500);
+    }
+    function gameOver() {
+      battleMessage = 'Elias falls... Respawning.';
+      setTimeout(() => {
+        player.hp = Math.floor(player.maxHp/2);
+        player.mp = Math.floor(player.maxMp/2);
+        battleActive = false;
+        currentEnemy = null;
+        player.x = 5*TILE_SIZE+16; player.y = 5*TILE_SIZE+16;
         updateUI();
-        updateBattleText();
-        gameLoop();
+      }, 2000);
+    }
+    function spawnBattleParticles(x,y,color,count) {
+      for (let i=0;i<count;i++) battleParticles.push({x,y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6-2,life:20,color,size:2+Math.random()*4});
+    }
+    function checkLevelUp() {
+      while (player.exp >= player.expToLevel) {
+        player.exp -= player.expToLevel;
+        player.level++;
+        player.expToLevel = Math.floor(player.expToLevel*1.5);
+        player.maxHp += 12; player.hp = player.maxHp;
+        player.maxMp += 6; player.mp = player.maxMp;
+      }
+    }
 
-        console.log("%c🗡️ Aswang Chronicles %c- Barangay Balete",
-            "color:#ff4444;font-size:20px;", "color:#ffcc00;");
-        console.log("%cWASD = Move | E = Interact | 1/2/3 = Combat",
-            "color:#aaa;");
-        console.log("%cFind shrines to heal & loot spots for gold!",
-            "color:#887766;");
-    </script>
+    // ──────────────────────────────────
+    // CUTSCENE ENGINE
+    // ──────────────────────────────────
+    function playCutscene(commands) {
+      cutsceneActive = true;
+      cutsceneQueue = commands.slice();
+      processCutscene();
+    }
+    function processCutscene() {
+      if (cutsceneQueue.length === 0) { cutsceneActive = false; return; }
+      const cmd = cutsceneQueue.shift();
+      if (cmd.type === 'message') {
+        battleMessage = cmd.text;
+        updateUI();
+        setTimeout(processCutscene, cmd.duration||2000);
+      } else if (cmd.type === 'wait') {
+        setTimeout(processCutscene, cmd.duration);
+      } else if (cmd.type === 'camera') {
+        // camera target change
+        processCutscene();
+      }
+    }
+
+    // ──────────────────────────────────
+    // UPDATE & RENDER
+    // ──────────────────────────────────
+    function update() {
+      if (dialogBoxActive || cutsceneActive) return;
+      if (!battleActive) {
+        let dx=0, dy=0;
+        if (keys['w']||keys['arrowup']) { dy=-1; player.direction='up'; }
+        if (keys['s']||keys['arrowdown']) { dy=1; player.direction='down'; }
+        if (keys['a']||keys['arrowleft']) { dx=-1; player.direction='left'; }
+        if (keys['d']||keys['arrowright']) { dx=1; player.direction='right'; }
+        if (dx!==0||dy!==0) {
+          player.moving = true;
+          const nx = player.x + dx*player.moveSpeed;
+          const ny = player.y + dy*player.moveSpeed;
+          // simple tile collision
+          const tileX = Math.floor(nx/TILE_SIZE), tileY = Math.floor(ny/TILE_SIZE);
+          if (map[tileY] && map[tileY][tileX] !== TILE_WALL && map[tileY][tileX] !== TILE_WATER && map[tileY][tileX] !== TILE_HOUSE) {
+            player.x = nx; player.y = ny;
+          }
+          player.animTimer++;
+          if (player.animTimer > 8) { player.animFrame = (player.animFrame+1)%3; player.animTimer=0; }
+        } else {
+          player.moving = false; player.animFrame = 0;
+        }
+        // random battle
+        if (Math.random() < 0.003 && !battleActive) {
+          startBattle('aswang');
+        }
+      }
+      // update battle particles
+      for (let i=battleParticles.length-1; i>=0; i--) {
+        const p = battleParticles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
+        if (p.life<=0) battleParticles.splice(i,1);
+      }
+      if (screenShake>0) screenShake--;
+      if (battleFlash>0) battleFlash--;
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById('hpFill').style.width = `${(player.hp/player.maxHp)*100}%`;
+      document.getElementById('mpFill').style.width = `${(player.mp/player.maxMp)*100}%`;
+      document.getElementById('expFill').style.width = `${(player.exp/player.expToLevel)*100}%`;
+      document.getElementById('hpText').textContent = `${player.hp}/${player.maxHp}`;
+      document.getElementById('mpText').textContent = `${player.mp}/${player.maxMp}`;
+      document.getElementById('lvlText').textContent = player.level;
+      document.getElementById('expText').textContent = `${player.exp}/${player.expToLevel}`;
+    }
+
+    function drawTileMap(ctx, camX, camY) {
+      const startTileX = Math.floor(camX/TILE_SIZE);
+      const startTileY = Math.floor(camY/TILE_SIZE);
+      const endTileX = startTileX + Math.ceil(W/TILE_SIZE)+1;
+      const endTileY = startTileY + Math.ceil(H/TILE_SIZE)+1;
+      for (let ty=startTileY; ty<=endTileY; ty++) {
+        for (let tx=startTileX; tx<=endTileX; tx++) {
+          if (ty<0||ty>=MAP_H||tx<0||tx>=MAP_W) continue;
+          const tile = map[ty][tx];
+          const sx = tx*TILE_SIZE - camX;
+          const sy = ty*TILE_SIZE - camY;
+          ctx.fillStyle = tileColors[tile] || '#000';
+          ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
+          if (tile === TILE_GRASS) {
+            ctx.fillStyle = '#2a5a2a'; ctx.fillRect(sx+2, sy+2, 3,3);
+          } else if (tile === TILE_PATH) {
+            ctx.fillStyle = '#7a6a4a'; ctx.fillRect(sx+6, sy+6, 4,4);
+          }
+        }
+      }
+    }
+
+    function drawSprite(ctx, sheet, frameX, frameY, frameW, frameH, dx, dy) {
+      ctx.drawImage(sheet, frameX*frameW, frameY*frameH, frameW, frameH, dx-frameW/2, dy-frameH, frameW, frameH);
+    }
+
+    function drawGame() {
+      ctx.clearRect(0,0,W,H);
+      const camX = player.x - W/2;
+      const camY = player.y - H/2;
+      drawTileMap(ctx, camX, camY);
+
+      // Draw NPCs
+      for (const npc of npcs) {
+        const nx = npc.x*TILE_SIZE+16 - camX;
+        const ny = npc.y*TILE_SIZE+16 - camY;
+        const sheet = npc.type==='elder'? elderSheet : merchantSheet;
+        drawSprite(ctx, sheet, 0,0,20,28, nx, ny);
+      }
+
+      // Draw player
+      const dirIndex = {down:0, left:1, right:2, up:3}[player.direction] || 0;
+      const frameCol = player.moving ? player.animFrame : 0;
+      const px = W/2, py = H/2;
+      drawSprite(ctx, playerSheet, dirIndex*3+frameCol, 0, PLAYER_FRAME_W, PLAYER_FRAME_H, px, py);
+
+      // Battle overlay
+      if (battleActive && currentEnemy) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle = '#fff'; ctx.font='20px Georgia'; ctx.textAlign='center';
+        ctx.fillText(currentEnemy.name, W/2, 70);
+        drawSprite(ctx, currentEnemy.sheet, 0,0,64,64, W-120, 200);
+        // HP bars
+        ctx.fillStyle='red'; ctx.fillRect(W/2-150,90,300,15);
+        ctx.fillStyle='lime'; ctx.fillRect(W/2-150,90,300*(currentEnemy.hp/currentEnemy.maxHp),15);
+        ctx.fillStyle='red'; ctx.fillRect(50, H-100, 200,15);
+        ctx.fillStyle='lime'; ctx.fillRect(50, H-100, 200*(player.hp/player.maxHp),15);
+        ctx.fillText(battleMessage, W/2, H-40);
+        // battle particles
+        for (const p of battleParticles) {
+          ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
+      }
+
+      // Pixel lighting (vignette)
+      const gradient = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, 450);
+      gradient.addColorStop(0,'rgba(0,0,0,0)'); gradient.addColorStop(0.5,'rgba(0,0,0,0.2)'); gradient.addColorStop(1,'rgba(0,0,0,0.9)');
+      ctx.fillStyle = gradient; ctx.fillRect(0,0,W,H);
+
+      // Screen shake
+      if (screenShake>0) {
+        const sx = (Math.random()-0.5)*screenShake*1.5;
+        const sy = (Math.random()-0.5)*screenShake*1.5;
+        canvas.style.transform = `translate(${sx}px,${sy}px)`;
+      } else canvas.style.transform = '';
+
+      // Minimap
+      minimapCtx.clearRect(0,0,90,90);
+      minimapCtx.fillStyle='#111'; minimapCtx.beginPath(); minimapCtx.arc(45,45,45,0,Math.PI*2); minimapCtx.fill();
+      const mmScale = 0.8;
+      for (let y=0; y<MAP_H; y++) {
+        for (let x=0; x<MAP_W; x++) {
+          if (map[y][x]===TILE_WALL || map[y][x]===TILE_WATER) {
+            minimapCtx.fillStyle = map[y][x]===TILE_WALL ? '#666' : '#26a';
+            minimapCtx.fillRect(45+(x-MAP_W/2)*mmScale, 45+(y-MAP_H/2)*mmScale, 1,1);
+          }
+        }
+      }
+      minimapCtx.fillStyle='#f44'; minimapCtx.fillRect(45+(player.x/TILE_SIZE-MAP_W/2)*mmScale, 45+(player.y/TILE_SIZE-MAP_H/2)*mmScale,2,2);
+    }
+
+    function gameLoop() {
+      update();
+      drawGame();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ──────────────────────────────────
+    // START CUTSCENE
+    // ──────────────────────────────────
+    setTimeout(() => {
+      playCutscene([
+        {type:'message', text:'Elias returns to Barangay Balete...', duration:2500},
+        {type:'message', text:'The elders spoke of a growing darkness.', duration:2500},
+        {type:'message', text:'Find Lolo Basilio near the old house.', duration:2500},
+      ]);
+    }, 500);
+
+    updateUI();
+    gameLoop();
+  </script>
 </body>
 </html>
