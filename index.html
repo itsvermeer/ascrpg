@@ -43,42 +43,23 @@
     }
     #status-bars {
       position: absolute;
-      top: 15px;
-      left: 15px;
-      background: rgba(0,0,0,0.7);
-      border: 2px solid #5a2020;
-      border-radius: 10px;
-      padding: 10px 14px;
-      min-width: 160px;
+      top: 10px;
+      left: 10px;
+      background: rgba(10,0,0,0.85);
+      border: 2px solid #5a1a1a;
+      border-radius: 8px;
+      padding: 8px 12px;
       backdrop-filter: blur(4px);
       display: none;
+      box-shadow: 0 0 15px rgba(0,0,0,0.7);
     }
-    .bar-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 4px 0;
-      font-size: 12px;
-    }
-    .bar-label {
-      width: 28px;
-      font-weight: bold;
-    }
-    .bar-track {
-      flex: 1;
-      height: 8px;
-      background: #1a0000;
-      border-radius: 4px;
-      overflow: hidden;
-      border: 1px solid #330000;
-    }
-    .bar-fill {
-      height: 100%;
-      transition: width 0.25s;
-    }
-    .hp-fill { background: linear-gradient(90deg, #c22, #f66); box-shadow: 0 0 6px red; }
-    .mp-fill { background: linear-gradient(90deg, #36c, #69f); box-shadow: 0 0 6px blue; }
-    .exp-fill { background: linear-gradient(90deg, #393, #6c6); box-shadow: 0 0 4px green; }
+    .bar-container { margin: 3px 0; }
+    .bar-label { font-size: 11px; color: #cc9; display: flex; justify-content: space-between; }
+    .bar-track { height: 8px; background: #1a0000; border-radius: 4px; overflow: hidden; border: 1px solid #400; margin-top: 2px; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.25s; }
+    .hp-fill { background: linear-gradient(90deg, #a00, #f44); box-shadow: 0 0 8px #f00; }
+    .mp-fill { background: linear-gradient(90deg, #036, #6af); box-shadow: 0 0 8px #05f; }
+    .exp-fill { background: linear-gradient(90deg, #360, #6c6); box-shadow: 0 0 6px #0a0; }
 
     .dialog-box {
       position: absolute;
@@ -86,25 +67,25 @@
       left: 50%;
       transform: translateX(-50%);
       width: 88%;
-      max-width: 700px;
-      background: rgba(10, 0, 0, 0.9);
-      border: 3px solid #8b3a3a;
-      border-radius: 14px;
-      padding: 18px 22px;
+      max-width: 720px;
+      background: rgba(5,0,0,0.92);
+      border: 3px solid #6a2020;
+      border-radius: 12px;
+      padding: 16px 20px;
       display: none;
+      backdrop-filter: blur(4px);
       box-shadow: 0 0 30px rgba(0,0,0,0.8);
       pointer-events: auto;
-      backdrop-filter: blur(4px);
     }
     .dialog-portrait {
       width: 70px;
       height: 70px;
       border: 3px solid #a55;
-      border-radius: 12px;
+      border-radius: 10px;
       float: left;
-      margin-right: 18px;
+      margin-right: 16px;
       image-rendering: pixelated;
-      background: #221;
+      background: #1a0000;
     }
     .dialog-text {
       font-size: clamp(13px, 2vw, 16px);
@@ -113,21 +94,21 @@
     }
     .dialog-hint {
       text-align: right;
-      font-size: 12px;
+      font-size: 11px;
       color: #887766;
       margin-top: 8px;
     }
     #minimap-corner {
       position: absolute;
-      bottom: 20px;
-      right: 20px;
+      bottom: 15px;
+      right: 15px;
       width: 90px;
       height: 90px;
       border-radius: 50%;
-      border: 3px solid #5a2020;
+      border: 2px solid #5a1a1a;
       overflow: hidden;
-      background: rgba(0,0,0,0.5);
-      box-shadow: 0 0 15px black;
+      background: rgba(0,0,0,0.4);
+      box-shadow: 0 0 10px black;
       pointer-events: none;
       display: none;
     }
@@ -154,7 +135,7 @@
       text-shadow: 0 0 5px red;
       touch-action: manipulation;
     }
-    .ctrl-btn:active { background: rgba(180,20,20,0.7); }
+    .ctrl-btn:active { background: rgba(180,20,20,0.8); }
     @media (min-width: 900px) { #mobile-controls { display: none; } }
   </style>
 </head>
@@ -162,11 +143,21 @@
   <canvas id="gameCanvas"></canvas>
   <div id="ui-layer">
     <div id="status-bars">
-      <div class="bar-row"><span class="bar-label">HP</span><div class="bar-track"><div class="bar-fill hp-fill" id="hpFill" style="width:100%"></div></div><span id="hpText">100/100</span></div>
-      <div class="bar-row"><span class="bar-label">MP</span><div class="bar-track"><div class="bar-fill mp-fill" id="mpFill" style="width:100%"></div></div><span id="mpText">50/50</span></div>
-      <div class="bar-row"><span class="bar-label">Lv</span><span id="lvlText">1</span><span style="margin-left:auto;" id="expText">0/30</span></div>
-      <div class="bar-track"><div class="bar-fill exp-fill" id="expFill" style="width:0%"></div></div>
+      <div class="bar-container">
+        <div class="bar-label"><span>❤️ HP</span><span id="hpText">100/100</span></div>
+        <div class="bar-track"><div class="bar-fill hp-fill" id="hpFill" style="width:100%"></div></div>
+      </div>
+      <div class="bar-container">
+        <div class="bar-label"><span>💧 MP</span><span id="mpText">50/50</span></div>
+        <div class="bar-track"><div class="bar-fill mp-fill" id="mpFill" style="width:100%"></div></div>
+      </div>
+      <div class="bar-container">
+        <div class="bar-label"><span>⚔️ LVL</span><span id="lvlText">1</span></div>
+        <div class="bar-label"><span>⭐ EXP</span><span id="expText">0/30</span></div>
+        <div class="bar-track"><div class="bar-fill exp-fill" id="expFill" style="width:0%"></div></div>
+      </div>
     </div>
+
     <div class="dialog-box" id="dialogBox">
       <canvas class="dialog-portrait" id="dialogPortrait" width="70" height="70"></canvas>
       <div class="dialog-text" id="dialogText"></div>
@@ -182,10 +173,9 @@
   </div>
 
   <script>
-    // ═══════════════════════════════════════════════════════════
-    //  ASWANG CHRONICLES - FULL RPG WITH SPRITE ANIMATION ENGINE
-    // ═══════════════════════════════════════════════════════════
-
+    // ══════════════════════════════════════════════════════
+    //  ASWANG CHRONICLES - HORROR RPG EDITION
+    // ══════════════════════════════════════════════════════
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const minimapCanvas = document.getElementById('minimapCanvas');
@@ -202,7 +192,7 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // ═══════════════ AUDIO ENGINE ═══════════════
+    // ── AUDIO ENGINE (horror themes) ──
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
     function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
@@ -219,14 +209,14 @@
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(t); osc.stop(t+duration);
     }
-    function sfxAttack() { playTone(200, 'square', 0.15, 0.15); playTone(120, 'sawtooth', 0.2, 0.1); }
-    function sfxMagic() { playTone(400, 'triangle', 0.2, 0.2, 200); playTone(600, 'sine', 0.3, 0.1); }
-    function sfxHeal() { playTone(500, 'sine', 0.25, 0.15); playTone(700, 'sine', 0.3, 0.15); }
-    function sfxHit() { playTone(80, 'square', 0.2, 0.2); }
-    function sfxWin() { playTone(800, 'square', 0.15); setTimeout(()=>playTone(1000,'square',0.2),100); }
-    function sfxError() { playTone(100, 'sawtooth', 0.3, 0.15); }
+    function sfxAttack() { playTone(180, 'square', 0.15, 0.15); playTone(100, 'sawtooth', 0.2, 0.1); }
+    function sfxMagic() { playTone(350, 'triangle', 0.2, 0.2, 150); playTone(550, 'sine', 0.25, 0.1); }
+    function sfxHeal() { playTone(450, 'sine', 0.25, 0.15); playTone(650, 'sine', 0.3, 0.15); }
+    function sfxHit() { playTone(70, 'square', 0.2, 0.2); }
+    function sfxWin() { playTone(700, 'square', 0.15); setTimeout(()=>playTone(900,'square',0.2),100); }
+    function sfxError() { playTone(90, 'sawtooth', 0.3, 0.15); }
 
-    // ═══════════════ SPRITE GENERATION ═══════════════
+    // ── SPRITE SHEET GENERATION ──
     function createSpriteSheet(width, height, drawFn) {
       const c = document.createElement('canvas');
       c.width = width; c.height = height;
@@ -236,7 +226,7 @@
       return c;
     }
 
-    // Player: 4 dirs x 4 frames = 16 frames, each 24x32
+    // Player: 4 dirs x 4 frames
     const PLAYER_FW = 24, PLAYER_FH = 32;
     const playerSheet = createSpriteSheet(PLAYER_FW * 4 * 4, PLAYER_FH, ctx => {
       const dirs = ['down','left','right','up'];
@@ -247,29 +237,23 @@
         }
       });
     });
-
     function drawPlayerFrame(ctx, x, y, dir, frame) {
       ctx.save(); ctx.translate(x+PLAYER_FW/2, y+4);
       const bob = (frame%2===0)?0:(frame===1?-1:1);
-      // hat
       ctx.fillStyle='#5a3a1a'; ctx.fillRect(-9,-18+bob,18,4);
       ctx.fillStyle='#7a523a'; ctx.fillRect(-10,-20+bob,20,3);
-      // face
       ctx.fillStyle='#d4a574'; ctx.fillRect(-6,-14+bob,12,10);
       ctx.fillStyle='#fff'; ctx.fillRect(-4,-12+bob,3,3); ctx.fillRect(2,-12+bob,3,3);
       ctx.fillStyle='#000'; ctx.fillRect(-3,-11+bob,1,1); ctx.fillRect(3,-11+bob,1,1);
-      // body
       ctx.fillStyle='#2a5a2a'; ctx.fillRect(-6,-4+bob,12,15);
       ctx.fillStyle='#4a7a4a'; ctx.fillRect(-5,-3+bob,10,13);
-      // legs
       const legShift = frame%2===0?2:-2;
       ctx.fillStyle='#3a2a1a'; ctx.fillRect(-5,11+bob,5,9); ctx.fillRect(1,11+bob+legShift,5,9);
-      // arms
       ctx.fillStyle='#d4a574'; ctx.fillRect(-9,0+bob,4,9); ctx.fillRect(6,0+bob+legShift*0.5,4,9);
       ctx.restore();
     }
 
-    // NPC: elder & merchant
+    // NPCs
     function drawNpcFrame(ctx, x, y, type, frame) {
       ctx.save(); ctx.translate(x+10, y+2);
       if (type==='elder') {
@@ -300,40 +284,57 @@
       ctx.fillStyle='#444';ctx.fillRect(-3,-3,3,3);ctx.fillRect(4,-3,3,3);
     });
 
-    // Enemy sprites (animated in battle) - larger 64x64
+    // Enemy sprites (2 frames for animation)
     function createEnemySheet(type) {
-      return createSpriteSheet(64, 64, ctx => {
-        ctx.save(); ctx.translate(32,32);
-        if (type==='aswang') {
-          ctx.fillStyle='#3a0a0a'; ctx.beginPath(); ctx.arc(0,2,24,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#5a1a1a'; ctx.beginPath(); ctx.arc(-6,-4,18,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(-10,-6,5,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#ff0'; ctx.beginPath(); ctx.arc(6,-6,5,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-10,-6,2,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(6,-6,2,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#fff'; ctx.fillRect(-12,12,24,5); ctx.fillStyle='#aaa'; ctx.fillRect(-10,13,20,3);
-        } else if (type==='tikbalang') {
-          ctx.fillStyle='#3a2a0a'; ctx.fillRect(-18,-24,36,48);
-          ctx.fillStyle='#6a4a1a'; ctx.fillRect(-14,-20,28,40);
-          ctx.fillStyle='#f40'; ctx.beginPath(); ctx.arc(-8,-12,5,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#f40'; ctx.beginPath(); ctx.arc(8,-12,5,0,Math.PI*2); ctx.fill();
+      return createSpriteSheet(80 * 2, 80, ctx => {
+        for (let f=0; f<2; f++) {
+          ctx.save(); ctx.translate(f*80 + 40, 40);
+          if (type==='aswang') {
+            // Body
+            ctx.fillStyle='#2a0808'; ctx.beginPath(); ctx.ellipse(0,4,28,32,0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#4a1212'; ctx.beginPath(); ctx.ellipse(-6,-8,20,24,0,0,Math.PI*2); ctx.fill();
+            // Eyes glowing
+            const eyeGlow = f===0 ? 1 : 0.5;
+            ctx.fillStyle = `rgba(255,255,0,${eyeGlow})`;
+            ctx.beginPath(); ctx.arc(-14,-12,8,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(10,-12,8,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(-14,-12,3,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(10,-12,3,0,Math.PI*2); ctx.fill();
+            // Mouth
+            if (f===0) {
+              ctx.fillStyle='#fff'; ctx.fillRect(-16,14,32,8);
+              ctx.fillStyle='#aaa'; ctx.fillRect(-14,15,28,4);
+            } else {
+              ctx.fillStyle='#600'; ctx.fillRect(-12,12,24,6);
+            }
+            // Claws
+            ctx.fillStyle='#3a0a0a'; ctx.fillRect(-35,5,20,8); ctx.fillRect(15,5,20,8);
+          } else if (type==='tikbalang') {
+            ctx.fillStyle='#3a2a0a'; ctx.fillRect(-22,-30,44,60);
+            ctx.fillStyle='#6a4a1a'; ctx.fillRect(-18,-26,36,50);
+            ctx.fillStyle='#f40'; ctx.beginPath(); ctx.arc(-10,-16,7,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#f40'; ctx.beginPath(); ctx.arc(10,-16,7,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#000'; ctx.fillRect(-12,5,24,8);
+            if (f===1) { ctx.fillStyle='#ff0'; ctx.fillRect(-8,5,16,4); }
+          }
+          ctx.restore();
         }
-        ctx.restore();
       });
     }
     const aswangSheet = createEnemySheet('aswang');
     const tikbalangSheet = createEnemySheet('tikbalang');
 
-    // ═══════════════ TILE MAP ═══════════════
+    // ── TILE MAP (horror palette) ──
     const TILE_GRASS=0, TILE_PATH=1, TILE_WALL=2, TILE_WATER=3, TILE_HOUSE=4;
     const tileColors = {
-      [TILE_GRASS]:'#1a3a1a', [TILE_PATH]:'#5a4a2a', [TILE_WALL]:'#333',
-      [TILE_WATER]:'#113366', [TILE_HOUSE]:'#6a4a2a',
+      [TILE_GRASS]:'#0d1f0d', [TILE_PATH]:'#3a3020', [TILE_WALL]:'#1a1a1a',
+      [TILE_WATER]:'#061a2e', [TILE_HOUSE]:'#4a3020',
     };
     const map = [];
-    for (let y=0;y<MAP_H;y++) {
+    for (let y=0; y<MAP_H; y++) {
       map[y]=[];
-      for (let x=0;x<MAP_W;x++) {
+      for (let x=0; x<MAP_W; x++) {
         if (x<2||x>=MAP_W-2||y<2||y>=MAP_H-2) map[y][x]=TILE_WALL;
         else if ((x>10&&x<16&&y>8&&y<14)||(x>30&&x<36&&y>22&&y<28)) map[y][x]=TILE_HOUSE;
         else if (x>4&&x<8&&y>20&&y<24) map[y][x]=TILE_WATER;
@@ -342,28 +343,28 @@
       }
     }
 
-    // ═══════════════ GAME STATE ═══════════════
+    // ── GAME STATE ──
     const player = {
       x: 5*TILE_SIZE+16, y: 5*TILE_SIZE+16,
       hp:100,maxHp:100,mp:50,maxMp:50,level:1,exp:0,expToLevel:30,
       gold:0,potions:2,
       direction:'down',moving:false,animFrame:0,animTimer:0,
-      moveSpeed:2.4,
+      moveSpeed:2.2,
     };
-
     const npcs = [
-      {x:12,y:11,type:'elder',name:'Lolo Basilio',dialog:['Welcome to Barangay Balete, Elias.','Beware the aswang that roam at night.','Take this healing potion. (Received)'],action:()=>{player.potions++;}},
-      {x:33,y:25,type:'merchant',name:'Aling Rosa',dialog:['Need supplies? I sell potions and charms.','Come back when you have more gold.']}
+      {x:12,y:11,type:'elder',name:'Lolo Basilio',dialog:['Welcome, Elias...','The aswang grow stronger each night.','Take this potion. (Received)'],action:()=>{player.potions++;}},
+      {x:33,y:25,type:'merchant',name:'Aling Rosa',dialog:['I have charms and potions...','But you need more gold.']}
     ];
 
-    let battleActive=false, currentEnemy=null, battleMessage='';
+    let battleActive=false, currentEnemy=null, enemyAnimTimer=0;
+    let battleMessage='';
     let dialogActive=false, currentDialog=[], dialogIdx=0;
     let cutsceneActive=false, cutsceneQueue=[];
     let screenShake=0, battleFlash=0;
     let battleParticles=[];
     let gameState='title'; // 'title','playing','cutscene'
 
-    // ═══════════════ DIALOGUE ═══════════════
+    // ── DIALOGUE ──
     function startDialogue(npc) {
       dialogActive=true; currentDialog=npc.dialog.slice(); dialogIdx=0;
       document.getElementById('dialogBox').style.display='block';
@@ -371,7 +372,7 @@
     }
     function advanceDialogue() {
       dialogIdx++;
-      if (dialogIdx>=currentDialog.length) { endDialogue(); }
+      if (dialogIdx>=currentDialog.length) endDialogue();
       else updateDialogueBox(null);
     }
     function endDialogue() {
@@ -393,29 +394,28 @@
         const dx=player.x-(npc.x*TILE_SIZE+16), dy=player.y-(npc.y*TILE_SIZE+16);
         if (Math.sqrt(dx*dx+dy*dy)<40) { startDialogue(npc); return; }
       }
-      battleMessage='Nothing to interact with.';
+      battleMessage='Nothing here...';
     }
 
-    // ═══════════════ BATTLE ═══════════════
+    // ── BATTLE ──
     function startBattle(type) {
       initAudio();
-      battleActive=true;
+      battleActive=true; enemyAnimTimer=0;
       const templates={aswang:{hp:80,maxHp:80,damage:8,exp:20,name:'Forest Aswang',sheet:aswangSheet},
                       tikbalang:{hp:120,maxHp:120,damage:14,exp:35,name:'Tikbalang',sheet:tikbalangSheet}};
       const t = templates[type]||templates.aswang;
-      currentEnemy={...t,hp:t.maxHp,stunned:false};
-      battleMessage=`${currentEnemy.name} appears!`;
-      battleFlash=10; screenShake=6;
+      currentEnemy={...t,hp:t.maxHp,stunned:false,animFrame:0};
+      battleMessage=`${currentEnemy.name} emerges from the shadows!`;
+      battleFlash=15; screenShake=8;
       updateUI();
     }
-
     function playerAttack() {
       if (!battleActive||!currentEnemy) return;
       sfxAttack();
       const dmg=Math.floor(Math.random()*12)+8;
-      currentEnemy.hp-=dmg; battleFlash=15; screenShake=8;
-      spawnParticles(W/2+100,250,'#f44',15);
-      battleMessage=`Elias attacks for ${dmg} damage!`;
+      currentEnemy.hp-=dmg; battleFlash=18; screenShake=6;
+      spawnParticles(W/2+100,200,'#f44',18);
+      battleMessage=`Elias slashes for ${dmg} damage!`;
       if (currentEnemy.hp<=0){victory();return;}
       setTimeout(enemyTurn,900);
     }
@@ -423,9 +423,9 @@
       if (player.mp<8){battleMessage='Not enough MP!';sfxError();return;}
       player.mp-=8; sfxMagic();
       const dmg=Math.floor(Math.random()*25)+15;
-      currentEnemy.hp-=dmg; battleFlash=25; screenShake=10;
-      spawnParticles(W/2+100,250,'#a6f',20);
-      battleMessage=`Shadow Flame deals ${dmg} damage!`;
+      currentEnemy.hp-=dmg; battleFlash=22; screenShake=10;
+      spawnParticles(W/2+100,200,'#a6f',22);
+      battleMessage=`Shadow Flame engulfs for ${dmg} damage!`;
       if (currentEnemy.hp<=0){victory();return;}
       setTimeout(enemyTurn,900);
     }
@@ -434,7 +434,7 @@
       player.mp-=6; sfxHeal();
       const heal=Math.min(20+Math.floor(Math.random()*15),player.maxHp-player.hp);
       player.hp+=heal;
-      spawnParticles(W/2-50,300,'#6f6',12);
+      spawnParticles(W/2-60,250,'#6f6',14);
       battleMessage=`Light Prayer restores ${heal} HP!`;
       setTimeout(enemyTurn,900);
     }
@@ -443,19 +443,19 @@
       if (currentEnemy.stunned){currentEnemy.stunned=false;battleMessage='Enemy is stunned!';return;}
       const dmg=Math.floor(Math.random()*currentEnemy.damage)+4;
       player.hp-=dmg; if(player.hp<0)player.hp=0;
-      sfxHit(); battleFlash=10; screenShake=6;
-      battleMessage=`${currentEnemy.name} hits for ${dmg} damage!`;
+      sfxHit(); battleFlash=12; screenShake=5;
+      battleMessage=`${currentEnemy.name} strikes for ${dmg} damage!`;
       if (player.hp<=0){gameOver();return;}
       updateUI();
     }
     function victory() {
       player.exp+=currentEnemy.exp; player.gold+=15;
-      sfxWin(); battleMessage=`${currentEnemy.name} defeated! +${currentEnemy.exp} EXP`;
+      sfxWin(); battleMessage=`${currentEnemy.name} vanquished! +${currentEnemy.exp} EXP`;
       checkLevelUp();
       setTimeout(()=>{battleActive=false;currentEnemy=null;updateUI();},1500);
     }
     function gameOver() {
-      battleMessage='Elias falls... Respawning.';
+      battleMessage='Elias collapses...';
       setTimeout(()=>{
         player.hp=Math.floor(player.maxHp/2); player.mp=Math.floor(player.maxMp/2);
         battleActive=false; currentEnemy=null;
@@ -464,7 +464,7 @@
       },2000);
     }
     function spawnParticles(x,y,color,count) {
-      for(let i=0;i<count;i++) battleParticles.push({x,y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6-2,life:20,color,size:2+Math.random()*4});
+      for(let i=0;i<count;i++) battleParticles.push({x,y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7-3,life:18,color,size:2+Math.random()*5});
     }
     function checkLevelUp() {
       while(player.exp>=player.expToLevel){
@@ -473,7 +473,7 @@
       }
     }
 
-    // ═══════════════ CUTSCENE ═══════════════
+    // ── CUTSCENE ──
     function playCutscene(commands) {
       cutsceneActive=true; cutsceneQueue=commands.slice(); processCutscene();
     }
@@ -483,12 +483,10 @@
       if (cmd.type==='message') {
         battleMessage=cmd.text; updateUI();
         setTimeout(processCutscene, cmd.duration||2000);
-      } else if (cmd.type==='wait') {
-        setTimeout(processCutscene, cmd.duration);
-      }
+      } else if (cmd.type==='wait') setTimeout(processCutscene, cmd.duration);
     }
 
-    // ═══════════════ UPDATE ═══════════════
+    // ── UPDATE ──
     function update() {
       if (dialogActive||cutsceneActive||gameState==='title') return;
       if (!battleActive) {
@@ -507,6 +505,11 @@
           player.animTimer++; if(player.animTimer>8){player.animFrame=(player.animFrame+1)%4;player.animTimer=0;}
         } else { player.moving=false; player.animFrame=0; }
         if (Math.random()<0.002) startBattle('aswang');
+      }
+      // enemy animation timer
+      if (battleActive && currentEnemy) {
+        enemyAnimTimer++;
+        if (enemyAnimTimer > 20) { currentEnemy.animFrame = (currentEnemy.animFrame + 1) % 2; enemyAnimTimer = 0; }
       }
       for (let i=battleParticles.length-1;i>=0;i--){
         const p=battleParticles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
@@ -527,7 +530,7 @@
       document.getElementById('expText').textContent=`${player.exp}/${player.expToLevel}`;
     }
 
-    // ═══════════════ RENDER ═══════════════
+    // ── RENDER ──
     function drawTileMap(ctx, camX, camY) {
       const stx=Math.floor(camX/TILE_SIZE), sty=Math.floor(camY/TILE_SIZE);
       const etx=stx+Math.ceil(W/TILE_SIZE)+1, ety=sty+Math.ceil(H/TILE_SIZE)+1;
@@ -535,8 +538,8 @@
         if (ty<0||ty>=MAP_H||tx<0||tx>=MAP_W) continue;
         const tile=map[ty][tx], sx=tx*TILE_SIZE-camX, sy=ty*TILE_SIZE-camY;
         ctx.fillStyle=tileColors[tile]; ctx.fillRect(sx,sy,TILE_SIZE,TILE_SIZE);
-        if (tile===TILE_GRASS){ctx.fillStyle='#2a5a2a';ctx.fillRect(sx+2,sy+2,3,3);}
-        else if (tile===TILE_PATH){ctx.fillStyle='#7a6a4a';ctx.fillRect(sx+6,sy+6,4,4);}
+        if (tile===TILE_GRASS){ctx.fillStyle='#143014';ctx.fillRect(sx+2,sy+2,2,2);}
+        else if (tile===TILE_PATH){ctx.fillStyle='#5a4a30';ctx.fillRect(sx+4,sy+4,3,3);}
       }
     }
 
@@ -549,18 +552,100 @@
       ctx.restore();
     }
 
+    function drawTitleScreen() {
+      ctx.fillStyle='#050000'; ctx.fillRect(0,0,W,H);
+      // flickering skull
+      const t = Date.now()/1000;
+      ctx.fillStyle = `rgba(180,0,0,${0.7+Math.sin(t*3)*0.3})`;
+      ctx.font='48px Georgia'; ctx.textAlign='center';
+      ctx.fillText('ASWANG', W/2, H/2-50);
+      ctx.fillText('CHRONICLES', W/2, H/2+10);
+      ctx.fillStyle='#ffcc00'; ctx.font='18px Georgia';
+      ctx.fillText('Barangay Balete', W/2, H/2+55);
+      ctx.fillStyle='#fff'; ctx.font='13px Georgia';
+      const alpha = 0.5 + Math.sin(t*2)*0.5;
+      ctx.fillStyle = `rgba(200,200,200,${alpha})`;
+      ctx.fillText('Press SPACE or tap to start', W/2, H/2+95);
+      // creepy fog
+      for (let i=0;i<10;i++) {
+        ctx.fillStyle=`rgba(30,0,0,${0.05+Math.sin(t+i)*0.02})`;
+        ctx.fillRect(0, i*H/10, W, 20);
+      }
+    }
+
+    function drawBattleScene() {
+      // Dark overlay
+      ctx.fillStyle='rgba(2,0,0,0.9)'; ctx.fillRect(0,0,W,H);
+      // Battle flash
+      if (battleFlash>0) {
+        ctx.fillStyle=`rgba(255,20,20,${battleFlash/40})`;
+        ctx.fillRect(0,0,W,H);
+      }
+      // Enemy area spotlight
+      const spotlight = ctx.createRadialGradient(W/2+120, 240, 20, W/2+120, 240, 200);
+      spotlight.addColorStop(0, 'rgba(60,0,0,0.6)'); spotlight.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = spotlight; ctx.fillRect(0,0,W,H);
+
+      if (currentEnemy) {
+        // Enemy name
+        ctx.fillStyle='#ffaaaa'; ctx.font='bold 26px Georgia'; ctx.textAlign='center';
+        ctx.fillText(currentEnemy.name, W/2, 70);
+        // Enemy HP bar
+        const ebx = W/2-150, eby=90;
+        ctx.fillStyle='#1a0000'; ctx.fillRect(ebx,eby,300,18);
+        ctx.fillStyle='#600'; ctx.fillRect(ebx+2,eby+2,296*(currentEnemy.hp/currentEnemy.maxHp),14);
+        ctx.strokeStyle='#a00'; ctx.lineWidth=2; ctx.strokeRect(ebx,eby,300,18);
+        ctx.fillStyle='#fff'; ctx.font='12px monospace';
+        ctx.fillText(`${currentEnemy.hp}/${currentEnemy.maxHp}`, W/2, eby+13);
+
+        // Animated enemy sprite (using frame 0 or 1)
+        const frame = currentEnemy.animFrame || 0;
+        drawSprite(ctx, currentEnemy.sheet, frame, 80, 80, W/2+120, 260);
+      }
+
+      // Player panel
+      const panelY = H-150;
+      ctx.fillStyle='rgba(10,0,0,0.9)'; ctx.fillRect(0,panelY,W,150);
+      ctx.strokeStyle='#5a1a1a'; ctx.lineWidth=3; ctx.strokeRect(5,panelY+5,W-10,140);
+      ctx.fillStyle='#fff'; ctx.font='20px Georgia'; ctx.textAlign='left';
+      ctx.fillText('ELIAS', 50, panelY+35);
+      // HP/MP bars
+      ctx.fillStyle='#1a0000'; ctx.fillRect(50,panelY+45, 200,14);
+      ctx.fillStyle='#c22'; ctx.fillRect(50,panelY+45, 200*(player.hp/player.maxHp),14);
+      ctx.fillStyle='#1a0000'; ctx.fillRect(50,panelY+65, 200,12);
+      ctx.fillStyle='#36c'; ctx.fillRect(50,panelY+65, 200*(player.mp/player.maxMp),12);
+      ctx.fillStyle='#fff'; ctx.font='11px monospace';
+      ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 55, panelY+56);
+      ctx.fillText(`MP ${player.mp}/${player.maxMp}`, 55, panelY+75);
+
+      // Commands
+      ctx.fillStyle='#ccaa88'; ctx.font='14px Georgia'; ctx.textAlign='center';
+      ctx.fillText('[1] ATTACK', W/2-160, panelY+120);
+      ctx.fillText('[2] SHADOW FLAME', W/2, panelY+120);
+      ctx.fillText('[3] HEAL', W/2+160, panelY+120);
+
+      // Message
+      ctx.fillStyle='#fff'; ctx.font='15px Georgia';
+      ctx.fillText(battleMessage, W/2, panelY-20);
+
+      // Particles
+      for (const p of battleParticles) { ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); }
+    }
+
+    function drawMinimap() {
+      minimapCtx.clearRect(0,0,90,90);
+      minimapCtx.fillStyle='#0a0000'; minimapCtx.beginPath(); minimapCtx.arc(45,45,45,0,Math.PI*2); minimapCtx.fill();
+      const s=0.8;
+      for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) if(map[y][x]===TILE_WALL||map[y][x]===TILE_WATER){
+        minimapCtx.fillStyle=map[y][x]===TILE_WALL?'#555':'#135';
+        minimapCtx.fillRect(45+(x-MAP_W/2)*s,45+(y-MAP_H/2)*s,1,1);
+      }
+      minimapCtx.fillStyle='#f44'; minimapCtx.fillRect(45+(player.x/TILE_SIZE-MAP_W/2)*s,45+(player.y/TILE_SIZE-MAP_H/2)*s,2,2);
+    }
+
     function drawGame() {
       ctx.clearRect(0,0,W,H);
-      if (gameState==='title') {
-        ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
-        ctx.fillStyle='#a00'; ctx.font='42px Georgia'; ctx.textAlign='center';
-        ctx.fillText('ASWANG',W/2,H/2-40); ctx.fillText('CHRONICLES',W/2,H/2+10);
-        ctx.fillStyle='#ffcc00'; ctx.font='16px Georgia';
-        ctx.fillText('Barangay Balete',W/2,H/2+50);
-        ctx.fillStyle='#fff'; ctx.font='14px Georgia';
-        ctx.fillText('Press Space or Tap to Start',W/2,H/2+90);
-        return;
-      }
+      if (gameState==='title') { drawTitleScreen(); return; }
 
       const camX = player.x - W/2, camY = player.y - H/2;
       drawTileMap(ctx, camX, camY);
@@ -578,48 +663,23 @@
       drawSprite(ctx, playerSheet, dirIdx*4+frame, PLAYER_FW, PLAYER_FH, W/2, H/2);
 
       // Battle overlay
-      if (battleActive && currentEnemy) {
-        ctx.fillStyle='rgba(0,0,0,0.8)'; ctx.fillRect(0,0,W,H);
-        ctx.fillStyle='#fff'; ctx.font='24px Georgia'; ctx.textAlign='center';
-        ctx.fillText(currentEnemy.name, W/2, 70);
-        // enemy sprite centered
-        drawSprite(ctx, currentEnemy.sheet, 0, 64, 64, W/2+120, 250);
-        // HP bars
-        ctx.fillStyle='#300'; ctx.fillRect(W/2-150,90,300,16);
-        ctx.fillStyle='#c00'; ctx.fillRect(W/2-150,90,300*(currentEnemy.hp/currentEnemy.maxHp),16);
-        ctx.fillStyle='#300'; ctx.fillRect(50, H-100, 200,14);
-        ctx.fillStyle='#0c0'; ctx.fillRect(50, H-100, 200*(player.hp/player.maxHp),14);
-        ctx.fillStyle='#fff'; ctx.font='14px monospace';
-        ctx.fillText(`HP ${player.hp}/${player.maxHp}`, 50, H-110);
-        ctx.fillText(battleMessage, W/2, H-40);
-        // particles
-        for (const p of battleParticles) { ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); }
-      }
+      if (battleActive) drawBattleScene();
 
-      // vignette
-      const grad = ctx.createRadialGradient(W/2,H/2,100,W/2,H/2,450);
-      grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(0.5,'rgba(0,0,0,0.15)'); grad.addColorStop(1,'rgba(0,0,0,0.85)');
+      // Horror vignette
+      const grad = ctx.createRadialGradient(W/2,H/2,120,W/2,H/2,500);
+      grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(0.6,'rgba(0,0,0,0.3)'); grad.addColorStop(1,'rgba(0,0,0,0.95)');
       ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
 
+      // Screen shake
       if (screenShake>0) {
-        const sx=(Math.random()-0.5)*screenShake*1.5, sy=(Math.random()-0.5)*screenShake*1.5;
+        const sx=(Math.random()-0.5)*screenShake*1.8, sy=(Math.random()-0.5)*screenShake*1.8;
         canvas.style.transform=`translate(${sx}px,${sy}px)`;
       } else canvas.style.transform='';
 
-      // minimap
-      if (gameState==='playing' && !battleActive) {
-        minimapCtx.clearRect(0,0,90,90); minimapCtx.fillStyle='#111';
-        minimapCtx.beginPath(); minimapCtx.arc(45,45,45,0,Math.PI*2); minimapCtx.fill();
-        const s=0.8;
-        for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) if(map[y][x]===TILE_WALL||map[y][x]===TILE_WATER){
-          minimapCtx.fillStyle=map[y][x]===TILE_WALL?'#666':'#26a';
-          minimapCtx.fillRect(45+(x-MAP_W/2)*s,45+(y-MAP_H/2)*s,1,1);
-        }
-        minimapCtx.fillStyle='#f44'; minimapCtx.fillRect(45+(player.x/TILE_SIZE-MAP_W/2)*s,45+(player.y/TILE_SIZE-MAP_H/2)*s,2,2);
-      }
+      if (gameState==='playing' && !battleActive) drawMinimap();
     }
 
-    // ═══════════════ INPUT ═══════════════
+    // ── INPUT ──
     const keys = {};
     window.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
@@ -654,14 +714,11 @@
       document.getElementById('status-bars').style.display='block';
       document.getElementById('minimap-corner').style.display='block';
       playCutscene([
-        {type:'message', text:'Elias returns to Barangay Balete...', duration:2500},
-        {type:'message', text:'The elders spoke of a growing darkness.', duration:2500},
+        {type:'message', text:'Elias returns to Barangay Balete...', duration:2800},
+        {type:'message', text:'A foul wind carries whispers of aswang.', duration:2800},
         {type:'message', text:'Find Lolo Basilio near the old house.', duration:2500},
-        {type:'wait', duration:500}
       ]);
       initAudio();
-      // play a little opening jingle
-      playTone(400,'triangle',0.3); setTimeout(()=>playTone(600,'triangle',0.2),150);
     }
 
     function gameLoop() {
